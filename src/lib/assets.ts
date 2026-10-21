@@ -70,3 +70,11 @@ export async function prepareImage(file: File, maxSide = 6000): Promise<{ blob: 
   bmp.close();
   return { blob: await c.convertToBlob({ type: 'image/webp', quality: 0.9 }), width, height };
 }
+
+export const getAssetBlob = (key: string) => get<Blob>(key);
+export async function putAsset(key: string, blob: Blob) {
+  await set(key, blob);
+  const old = urlCache.get(key);
+  if (old) URL.revokeObjectURL(old);
+  urlCache.delete(key);
+}

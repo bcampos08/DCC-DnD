@@ -57,6 +57,7 @@ export interface Character {
   skills?: { name: string; bonus: number }[];
   attacks?: { name: string; toHit?: number; damage?: string; notes?: string }[];
   ddbInventory?: { name: string; q: number; equipped?: boolean }[]; // read-only copy from D&D Beyond
+  sheet?: DdbSheet; // everything else read from D&D Beyond
   conditions: string[];
   concentrating?: boolean;
   ddbId?: string;
@@ -177,4 +178,36 @@ export interface Campaign {
   partyLoot: LootItem[];
   customMonsters: Monster[];
   settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number };
+}
+
+// ----- Full character sheet read from D&D Beyond -----
+export interface SheetText { name: string; desc: string; source?: string; level?: number }
+export interface SheetSpell {
+  name: string; level: number; school: string; time: string; range: string; components: string; duration: string;
+  concentration: boolean; ritual: boolean; desc: string; prepared: boolean; always: boolean; source: string;
+}
+export interface SheetAction { name: string; desc: string; source: string; uses?: { max: number; used: number; reset: string } }
+export interface SheetItem { name: string; q: number; equipped: boolean; attuned: boolean; weight?: number; rarity?: string; type?: string; desc?: string; magic?: boolean }
+export interface DdbSheet {
+  alignment?: string;
+  xp?: number;
+  inspiration?: boolean;
+  background?: SheetText;
+  hitDice: { die: string; total: number; used: number }[];
+  deathSaves?: { success: number; fail: number };
+  senses: string[];
+  speeds: string[];
+  proficiencies: { armor: string[]; weapons: string[]; tools: string[]; languages: string[]; other: string[] };
+  defenses: { resist: string[]; immune: string[]; vuln: string[]; condImmune: string[] };
+  spellcasting: { cls: string; ability: string; dc: number; attack: number }[];
+  slots: { level: number; max: number; used: number }[];
+  pact?: { level: number; max: number; used: number };
+  spells: SheetSpell[];
+  actions: SheetAction[];
+  features: SheetText[];
+  inventory: SheetItem[];
+  currency: { cp: number; sp: number; ep: number; gp: number; pp: number };
+  traits: { label: string; text: string }[];
+  notes: { label: string; text: string }[];
+  bio: { label: string; value: string }[];
 }

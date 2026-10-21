@@ -10,6 +10,7 @@ import { d20Expr, fmtMod, modOf } from '../../lib/dice';
 import HpControl, { HpBar } from '../HpControl';
 import Conditions, { CondChips } from '../Conditions';
 import Modal from '../Modal';
+import CharacterSheet from '../CharacterSheet';
 import { send } from '../../lib/sync';
 import type { Character, LootItem } from '../../types';
 import { ABILITIES } from '../../types';
@@ -22,6 +23,7 @@ export default function PartyPanel() {
   const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<Character | null>(null);
   const [q, setQ] = useState('');
+  const [sheetFor, setSheetFor] = useState<string | null>(null);
   const st = useCampaign.getState();
   const ownerOf = (to?: string) => (to && chars.some(c => c.id === to) ? to : '');
   const stash = loot.filter(it => !ownerOf(it.to));
@@ -86,6 +88,7 @@ export default function PartyPanel() {
                 {!!c.attacks?.length && <div className="sb-line"><b>Attacks</b> {c.attacks.map(a => <span key={a.name} className="atk">{a.name} {a.toHit != null && <button className="roll-chip sm" onClick={() => roll(d20Expr(a.toHit!), `${a.name} attack`, c.name)}>{fmtMod(a.toHit)}</button>} {a.damage && <button className="roll-chip sm" onClick={() => roll(a.damage!, `${a.name} damage`, c.name)}>{a.damage}</button>} <small className="muted">{a.notes}</small></span>)}</div>}
                 <div className="row gap wrap">
                   <button className="btn sm" onClick={() => addCharacterToken(c)}>Place token</button>
+                  <button className="btn sm" onClick={() => setSheetFor(c.id)}>📜 Full sheet</button>
                   {c.ddbId && <button className="btn sm" onClick={() => sync(c)}>⟳ Sync</button>}
                   {c.ddbId && <a className="btn sm" href={`https://www.dndbeyond.com/characters/${c.ddbId}`} target="_blank" rel="noreferrer">Open sheet ↗</a>}
                   <button className="btn sm" onClick={() => setEditing(c)}>Edit</button>
@@ -94,7 +97,7 @@ export default function PartyPanel() {
                 {c.syncedAt && <small className="muted">Last synced {new Date(c.syncedAt).toLocaleString()}</small>}
               </div>
             )}
-            {open !== c.id && <div className="row gap"><button className="btn sm" onClick={() => addCharacterToken(c)}>Place token</button><button className="btn sm ghost" onClick={() => setOpen(c.id)}>Details</button></div>}
+            {open !== c.id && <div className="row gap"><button className="btn sm" onClick={() => addCharacterToken(c)}>Place token</button><button className="btn sm" onClick={() => setSheetFor(c.id)}>📜 Full sheet</button><button className="btn sm ghost" onClick={() => setOpen(c.id)}>Details</button></div>}
           </li>
         ))}
       </ul>
@@ -107,6 +110,7 @@ export default function PartyPanel() {
         {!!stash.length && <button className="btn sm" onClick={() => send({ type: 'popup', p: { kind: 'loot', title: 'Party stash', items: stash.slice(0, 20), at: Date.now() } })}>Show stash on table</button>}
       </details>
 
+      {sheetFor && <CharacterSheet charId={sheetFor} onClose={() => setSheetFor(null)} />}
       {adding === 'ddb' && <DdbImport onClose={() => setAdding(null)} />}
       {adding === 'manual' && <CharForm onClose={() => setAdding(null)} />}
       {editing && <CharForm initial={editing} onClose={() => setEditing(null)} />}

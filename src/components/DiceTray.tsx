@@ -22,18 +22,17 @@ export default function DiceTray() {
     <div className={'dice-tray' + (open ? '' : ' closed')}>
       <div className="row gap">
         <button className="tray-toggle grow" onClick={() => setOpen(!open)}>{open ? '▾ Dice' : '▴ Dice'}</button>
-        {open && (
-          <span className="tray-count" title="How many recent rolls to show here">
-            Rolls shown
-            <button className="icon-btn" onClick={() => setTrayRolls(trayRolls - 1)} disabled={trayRolls <= 0} aria-label="Show fewer rolls">−</button>
-            <b>{trayRolls}</b>
-            <button className="icon-btn" onClick={() => setTrayRolls(trayRolls + 1)} disabled={trayRolls >= 20} aria-label="Show more rolls">+</button>
-          </span>
-        )}
       </div>
       {open && (
         <>
           {recent.length > 0 && <div className="tray-rolls">{recent.map(r => <RollCard key={r.id} r={r} />)}</div>}
+          {/* Sits under the rolls: the tray is pinned to the bottom, so this stays put as the list grows. */}
+          <div className="tray-count" title="How many recent rolls to show here">
+            Rolls shown
+            <button className="icon-btn" onClick={() => setTrayRolls(trayRolls - 1)} disabled={trayRolls <= 0} aria-label="Show fewer rolls">−</button>
+            <b>{trayRolls}</b>
+            <button className="icon-btn" onClick={() => setTrayRolls(trayRolls + 1)} disabled={trayRolls >= 20} aria-label="Show more rolls">+</button>
+          </div>
           <div className="dice-row">
             {DICE.map(d => <button key={d} className="die" onClick={() => roll(`1d${d}`, `d${d}`, 'DM')}>d{d}</button>)}
           </div>

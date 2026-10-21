@@ -53,6 +53,6 @@ export const useUI = create<UI>()((set, get) => ({
   toast: (text, action) => {
     const id = tid++;
     set(s => ({ toasts: [...s.toasts, { id, text, action }] }));
-    setTimeout(() => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), action ? 9000 : 4000);
+    setTimeout(() => set(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), action ? 20000 : 4000);
   },
 }));

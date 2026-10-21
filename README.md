@@ -22,7 +22,15 @@ browser window on the TV shows players the map.
 - **Loot.** Loot Box Forge is built in: open a box, pick items, send them to the party loot list, show them on the table.
 - **Dice.** Dice tray with advantage/disadvantage and public or hidden (DM only) rolls, plus a roll log.
 
-Everything is saved in the DM's browser (IndexedDB). Use **Scenes → Download backup** to keep a copy.
+Everything is saved in the DM's browser (IndexedDB). Use **☁ Cloud** to move a campaign between computers
+(save on the desktop, load on the laptop), or **Scenes → Download backup** for a file copy.
+
+## Cloud save setup (one time)
+
+1. In Supabase, open **SQL Editor → New query**, paste the contents of `supabase/setup.sql`, and press **Run**.
+2. Optional: in **Authentication → Sign In / Providers → Email**, turn off **Confirm email** so new accounts work
+   right away. Otherwise click the link in the confirmation email before signing in.
+3. In the app, press **☁ Cloud → Create account**, then sign in with the same account on each computer.
 
 ## Keyboard
 

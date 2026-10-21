@@ -16,6 +16,8 @@ import { channel, send, tableState, type Measure, type Ping } from '../lib/sync'
 import { uid } from '../lib/id';
 import type { Camera, Scene } from '../types';
 import { loadSrd } from '../lib/monsters';
+import CloudModal from '../components/CloudModal';
+import { cloudInfo, currentUser, isDirty, lastCloudSave, loadFromCloud, onDirtyChange } from '../lib/cloud';
 import { nextTurn } from '../lib/actions';
 
 const TABS: { id: Tab; label: string }[] = [
@@ -38,6 +40,28 @@ export default function DMView() {
   const [measure, setMeasure] = useState<Measure | null>(null);
   const [pings, setPings] = useState<Ping[]>([]);
   const [tableOpen, setTableOpen] = useState(false);
+  const [cloudOpen, setCloudOpen] = useState(false);
+  const [dirty, setDirtyState] = useState(isDirty());
+  useEffect(() => onDirtyChange(() => setDirtyState(isDirty())), []);
+
+  // On startup, offer a newer cloud save (e.g. planning done on the desktop).
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!(await currentUser())) return;
+        const info = await cloudInfo();
+        const mine = lastCloudSave();
+        if (info && (!mine || new Date(info.saved_at) > new Date(mine))) {
+          useUI.getState().toast(`Newer cloud save from ${info.device ?? 'another computer'} (${new Date(info.saved_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })})`, {
+            label: 'Load it', run: async () => {
+              if (isDirty() && !confirm('This computer has changes that are not in the cloud. Replace them?')) return;
+              try { await loadFromCloud(() => {}); useUI.getState().toast('Loaded the cloud save'); } catch (e) { useUI.getState().toast((e as Error).message); }
+            },
+          });
+        }
+      } catch { /* offline or cloud not set up yet */ }
+    })();
+  }, []);
 
   useEffect(() => { loadSrd(); }, []);
 
@@ -114,6 +138,7 @@ export default function DMView() {
         <label className="check" title="Fog of war on this scene"><input type="checkbox" checked={scene.fog.enabled} onChange={e => upd(s => { s.fog.enabled = e.target.checked; })} /> Fog</label>
         <button className="btn sm" onClick={sendView} title="Make the table screen show what you see now">Send my view to table</button>
         <button className="btn sm" onClick={fitTable} title="Fit the whole map on the table screen">Fit table</button>
+        <button className={'btn sm cloud-btn' + (dirty ? ' dirty' : '')} onClick={() => setCloudOpen(true)} title={dirty ? 'Changes on this computer are not saved to the cloud yet' : 'Cloud save'}>{dirty && <i className="dot" />}☁ Cloud</button>
         <button className={'btn sm' + (tableOpen ? '' : ' primary')} onClick={openTable}>{tableOpen ? '📺 Table open' : '📺 Open table view'}</button>
       </header>
       <div className="dm-body">
@@ -149,6 +174,7 @@ export default function DMView() {
           <DiceTray />
           <TokenCard />
           <Toasts />
+          {cloudOpen && <CloudModal onClose={() => setCloudOpen(false)} />}
         </div>
         <aside className="side">
           <nav className="tabs">

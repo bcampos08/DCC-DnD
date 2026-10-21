@@ -1,6 +1,7 @@
 import type { Ability, Character } from '../types';
 import { ABILITIES } from '../types';
 import { modOf } from './dice';
+import { parseSheet } from './ddbSheet';
 
 // Reads a public D&D Beyond character. Values are computed from the character data the way
 // D&D Beyond does for common cases; anything unusual can be corrected by hand after import.
@@ -137,6 +138,7 @@ export function parseDdb(d: any, existing?: Partial<Character>): Omit<Character,
     initBonus, passivePerception: 10 + perception,
     speed: `${speedVal + sum('bonus', 'speed')} ft.`,
     abilities: scores, saves, skills, attacks,
+    sheet: parseSheet(d, { scores, mods, pb, level }),
     ddbInventory: inv.filter(i => i.definition?.name).map(i => ({ name: i.definition.name, q: i.quantity ?? 1, equipped: !!i.equipped })),
     conditions: existing?.conditions ?? [],
     concentrating: existing?.concentrating ?? false,
