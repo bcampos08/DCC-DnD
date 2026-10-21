@@ -56,6 +56,7 @@ export interface Character {
   saves?: Partial<Record<Ability, number>>;
   skills?: { name: string; bonus: number }[];
   attacks?: { name: string; toHit?: number; damage?: string; notes?: string }[];
+  ddbInventory?: { name: string; q: number; equipped?: boolean }[]; // read-only copy from D&D Beyond
   conditions: string[];
   concentrating?: boolean;
   ddbId?: string;

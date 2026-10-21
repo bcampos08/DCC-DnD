@@ -302,3 +302,17 @@ h3, h4 { margin: 0; }
 /* Let panel sections keep their full height so the panel scrolls instead of squashing them. */
 .pad > *, .panel-col > * { flex-shrink: 0; }
 .panel-col > .panel-scroll { flex-shrink: 1; }
+.tray-count { display: inline-flex; align-items: center; gap: 2px; font-size: .78rem; color: var(--muted); }
+.tray-count b { min-width: 1.6ch; text-align: center; color: var(--fg); }
+.tray-rolls { max-height: 42vh; overflow-y: auto; display: flex; flex-direction: column; }
+.inv { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+.inv > summary { cursor: pointer; font-weight: 700; font-size: .88rem; }
+.inv[open] { display: flex; flex-direction: column; gap: 6px; }
+.inv[open] > summary { margin-bottom: 2px; }
+.inv.stash { background: var(--raised); }
+.inv .loot-list li { background: var(--panel); }
+.inv-sub { font-weight: 700; font-size: .82rem; margin-top: 4px; }
+.ddb-inv { margin: 0; padding-left: 18px; font-size: .88rem; columns: 2; column-gap: 14px; }
+.search-results { background: #172033; border: 1px solid #1e3a8a; border-radius: 8px; padding: 6px 10px; }
+.search-results ul { margin: 0; padding-left: 18px; }
+.for-row { font-weight: 600; }

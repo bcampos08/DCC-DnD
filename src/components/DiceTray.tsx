@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useUI } from '../ui';
+import { useUI, setTrayRolls } from '../ui';
 import { useCampaign } from '../store';
 import { roll } from '../lib/roll';
 import { isDiceExpr } from '../lib/dice';
@@ -8,8 +8,9 @@ import RollCard from './RollCard';
 const DICE = [4, 6, 8, 10, 12, 20, 100];
 
 export default function DiceTray() {
-  const { rollHidden, adv, set } = useUI();
-  const last = useCampaign(s => s.rolls[0]);
+  const { rollHidden, adv, set, trayRolls } = useUI();
+  const rolls = useCampaign(s => s.rolls);
+  const recent = rolls.slice(0, trayRolls);
   const [expr, setExpr] = useState('');
   const [open, setOpen] = useState(true);
   const go = () => {
@@ -19,10 +20,20 @@ export default function DiceTray() {
   };
   return (
     <div className={'dice-tray' + (open ? '' : ' closed')}>
-      <button className="tray-toggle" onClick={() => setOpen(!open)}>{open ? '▾ Dice' : '▴ Dice'}</button>
+      <div className="row gap">
+        <button className="tray-toggle grow" onClick={() => setOpen(!open)}>{open ? '▾ Dice' : '▴ Dice'}</button>
+        {open && (
+          <span className="tray-count" title="How many recent rolls to show here">
+            Rolls shown
+            <button className="icon-btn" onClick={() => setTrayRolls(trayRolls - 1)} disabled={trayRolls <= 0} aria-label="Show fewer rolls">−</button>
+            <b>{trayRolls}</b>
+            <button className="icon-btn" onClick={() => setTrayRolls(trayRolls + 1)} disabled={trayRolls >= 20} aria-label="Show more rolls">+</button>
+          </span>
+        )}
+      </div>
       {open && (
         <>
-          {last && <RollCard r={last} />}
+          {recent.length > 0 && <div className="tray-rolls">{recent.map(r => <RollCard key={r.id} r={r} />)}</div>}
           <div className="dice-row">
             {DICE.map(d => <button key={d} className="die" onClick={() => roll(`1d${d}`, `d${d}`, 'DM')}>d{d}</button>)}
           </div>

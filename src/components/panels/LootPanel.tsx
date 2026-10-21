@@ -22,7 +22,8 @@ export default function LootPanel() {
   const [res, setRes] = useState<LootResult | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [coins, setCoins] = useState(true);
-  const [to, setTo] = useState('');
+  const [toPick, setTo] = useState('');
+  const to = chars.some(c => c.id === toPick) ? toPick : ''; // falls back to the party
   const [, force] = useState(0);
   const setLevel = (v: number) => st.set(d => { d.settings.partyLevel = Math.max(1, Math.min(MAX_LEVEL, v)); });
 
@@ -65,6 +66,12 @@ export default function LootPanel() {
         <input type="range" min={1} max={MAX_LEVEL} value={level} onChange={e => setLevel(+e.target.value)} className="grow" aria-label="Party level" />
       </div>
       <p className="hint">{oddsText(tier, level)}</p>
+      <label className="row gap for-row">This box is for
+        <select className="grow" value={to} onChange={e => setTo(e.target.value)} aria-label="Who the loot is for">
+          <option value="">The party</option>
+          {chars.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </label>
       <button className="btn primary big" onClick={open}>Open {TIERS.find(t => t.id === tier)!.name} {BOXMAP[box].name} box</button>
 
       {res && (
@@ -88,14 +95,11 @@ export default function LootPanel() {
               <button className="btn sm" onClick={() => { setPicked(new Set(res.items.map((_, i) => i))); setCoins(true); }}>All</button>
               <button className="btn sm" onClick={() => { setPicked(new Set()); setCoins(false); }}>None</button>
               <span className="grow" />
-              <select value={to} onChange={e => setTo(e.target.value)} aria-label="Send to">
-                <option value="">To party</option>
-                {chars.map(c => <option key={c.id} value={c.id}>To {c.name}</option>)}
-              </select>
+              <span className="muted sm">Goes to {to ? chars.find(c => c.id === to)?.name : 'the party'}</span>
             </div>
             <div className="row gap">
               <button className="btn" onClick={show}>Show on table</button>
-              <button className="btn primary grow" onClick={sendToParty}>Send selected</button>
+              <button className="btn primary grow" onClick={sendToParty}>Send to {to ? chars.find(c => c.id === to)?.name : 'party'}</button>
             </div>
           </div>
         </div>

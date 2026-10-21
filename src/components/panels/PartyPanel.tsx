@@ -11,7 +11,7 @@ import HpControl, { HpBar } from '../HpControl';
 import Conditions, { CondChips } from '../Conditions';
 import Modal from '../Modal';
 import { send } from '../../lib/sync';
-import type { Character } from '../../types';
+import type { Character, LootItem } from '../../types';
 import { ABILITIES } from '../../types';
 import { RNAME } from '../../loot/engine';
 
@@ -21,7 +21,10 @@ export default function PartyPanel() {
   const [adding, setAdding] = useState<null | 'ddb' | 'manual'>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [editing, setEditing] = useState<Character | null>(null);
+  const [q, setQ] = useState('');
   const st = useCampaign.getState();
+  const ownerOf = (to?: string) => (to && chars.some(c => c.id === to) ? to : '');
+  const stash = loot.filter(it => !ownerOf(it.to));
 
   const sync = async (c: Character) => {
     try {
@@ -42,6 +45,8 @@ export default function PartyPanel() {
         <button className="btn sm primary" onClick={() => setAdding('ddb')}>+ D&D Beyond</button>
         <button className="btn sm" onClick={() => setAdding('manual')}>+ Manual</button>
       </div>
+      <input className="search" type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Search inventories (e.g. rope, potion)" aria-label="Search inventories" />
+      {q.trim() && <SearchResults q={q} />}
       {!chars.length && <p className="hint">Add your players' characters. Import from D&D Beyond (character set to Public) or type in the basics yourself.</p>}
       <ul className="char-list">
         {chars.map(c => (
@@ -59,6 +64,7 @@ export default function PartyPanel() {
               <span className="muted sm">PP {c.passivePerception ?? '–'} · Init {fmtMod(c.initBonus)}</span>
             </div>
             <CondChips ids={c.conditions} />
+            <Inventory c={c} items={loot.filter(it => it.to === c.id)} />
             {open === c.id && (
               <div className="char-detail">
                 <HpControl targets={[{ charId: c.id }]} />
@@ -93,24 +99,13 @@ export default function PartyPanel() {
         ))}
       </ul>
 
-      <h3 className="h">Party loot</h3>
-      {!loot.length && <p className="hint">Items you send from the Loot tab land here.</p>}
-      <ul className="loot-list">
-        {loot.map(it => (
-          <li key={it.id}>
-            <div className="grow">
-              <b>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}</b> <span className={`rar r-${it.rarity}`}>{RNAME[it.rarity as keyof typeof RNAME] ?? ''}</span>
-              {it.desc && <small className="muted block">{it.desc}</small>}
-            </div>
-            <select value={it.to ?? ''} onChange={e => st.set(d => { const x = d.partyLoot.find(x => x.id === it.id); if (x) x.to = e.target.value || undefined; })} aria-label="Given to">
-              <option value="">Party</option>
-              {chars.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button className="icon-btn" onClick={() => st.set(d => { d.partyLoot = d.partyLoot.filter(x => x.id !== it.id); })} aria-label="Remove">✕</button>
-          </li>
-        ))}
-      </ul>
-      {!!loot.length && <button className="btn sm" onClick={() => send({ type: 'popup', p: { kind: 'loot', title: 'Party loot', items: loot.slice(0, 20), at: Date.now() } })}>Show list on table</button>}
+      <details className="inv stash" open>
+        <summary><b>Party stash</b> <span className="muted">({stash.length})</span></summary>
+        {!stash.length && <p className="hint">Loot sent to “the party” lands here. Use the dropdown on an item to give it to someone.</p>}
+        <ul className="loot-list">{stash.map(it => <LootRow key={it.id} it={it} />)}</ul>
+        <AddItem to="" />
+        {!!stash.length && <button className="btn sm" onClick={() => send({ type: 'popup', p: { kind: 'loot', title: 'Party stash', items: stash.slice(0, 20), at: Date.now() } })}>Show stash on table</button>}
+      </details>
 
       {adding === 'ddb' && <DdbImport onClose={() => setAdding(null)} />}
       {adding === 'manual' && <CharForm onClose={() => setAdding(null)} />}
@@ -188,5 +183,81 @@ function CharForm({ initial, onClose }: { initial?: Character; onClose: () => vo
       {c.ddbId && <p className="hint">Imported from D&D Beyond. Syncing will overwrite these numbers.</p>}
       <div className="row gap end"><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save</button></div>
     </Modal>
+  );
+}
+
+// One loot item with "given to" and remove controls.
+function LootRow({ it }: { it: LootItem }) {
+  const chars = useCampaign(s => s.characters);
+  const st = useCampaign.getState();
+  const owner = it.to && chars.some(c => c.id === it.to) ? it.to : '';
+  return (
+    <li>
+      <div className="grow">
+        <b>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}</b> <span className={`rar r-${it.rarity}`}>{it.cat === 'coins' ? '' : RNAME[it.rarity as keyof typeof RNAME] ?? ''}</span>
+        {it.desc && it.cat !== 'coins' && <small className="muted block">{it.desc}</small>}
+      </div>
+      <select value={owner} onChange={e => st.set(d => { const x = d.partyLoot.find(x => x.id === it.id); if (x) x.to = e.target.value || undefined; })} aria-label="Given to">
+        <option value="">Party</option>
+        {chars.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <button className="icon-btn" onClick={() => st.set(d => { d.partyLoot = d.partyLoot.filter(x => x.id !== it.id); })} aria-label={`Remove ${it.name}`}>✕</button>
+    </li>
+  );
+}
+
+function AddItem({ to }: { to: string }) {
+  const [name, setName] = useState('');
+  return (
+    <form className="row gap" onSubmit={e => {
+      e.preventDefault();
+      const n = name.trim();
+      if (!n) return;
+      useCampaign.getState().addLoot([{ id: uid(), name: n, q: 1, rarity: 'M', desc: '', cat: 'gear', to: to || undefined, at: Date.now() }]);
+      setName('');
+    }}>
+      <input className="grow" value={name} onChange={e => setName(e.target.value)} placeholder="Add an item by hand" aria-label="New item name" />
+      <button className="btn sm">Add</button>
+    </form>
+  );
+}
+
+// A character's inventory: loot given at the table plus their D&D Beyond inventory (read-only).
+function Inventory({ c, items }: { c: Character; items: LootItem[] }) {
+  const ddb = c.ddbInventory ?? [];
+  return (
+    <details className="inv">
+      <summary>Inventory <span className="muted">({items.length + ddb.length})</span></summary>
+      {items.length > 0 && <ul className="loot-list">{items.map(it => <LootRow key={it.id} it={it} />)}</ul>}
+      {!items.length && <p className="hint">No loot given at the table yet.</p>}
+      <AddItem to={c.id} />
+      {ddb.length > 0 && (
+        <>
+          <div className="inv-sub">On D&D Beyond <small className="muted">(read-only, updates on Sync)</small></div>
+          <ul className="ddb-inv">{ddb.map((it, i) => <li key={i}>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}{it.equipped && <span className="tag">equipped</span>}</li>)}</ul>
+        </>
+      )}
+    </details>
+  );
+}
+
+// Who has an item matching the search, across table loot, the stash and D&D Beyond inventories.
+function SearchResults({ q }: { q: string }) {
+  const chars = useCampaign(s => s.characters);
+  const loot = useCampaign(s => s.partyLoot);
+  const needle = q.trim().toLowerCase();
+  const hits: { item: string; who: string; where: string }[] = [];
+  for (const it of loot) if (it.name.toLowerCase().includes(needle)) {
+    const c = chars.find(c => c.id === it.to);
+    hits.push({ item: it.name + (it.q > 1 ? ` ×${it.q}` : ''), who: c?.name ?? 'Party stash', where: 'table loot' });
+  }
+  for (const c of chars) for (const it of c.ddbInventory ?? []) if (it.name.toLowerCase().includes(needle))
+    hits.push({ item: it.name + (it.q > 1 ? ` ×${it.q}` : ''), who: c.name, where: 'D&D Beyond' });
+  return (
+    <div className="search-results">
+      {hits.length ? (
+        <ul>{hits.map((h, i) => <li key={i}><b>{h.who}</b> has {h.item} <small className="muted">({h.where})</small></li>)}</ul>
+      ) : <p className="hint">Nobody has anything matching “{q.trim()}”.</p>}
+    </div>
   );
 }
