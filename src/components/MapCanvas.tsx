@@ -221,7 +221,8 @@ export default function MapCanvas(p: Props) {
     dragStart.current.forEach((v, k) => next.set(k, { x: v.x + dx, y: v.y + dy }));
     setDragPos(next);
     const sc = snapCentre(e.target.x(), e.target.y(), t.size, g);
-    p.onMeasure?.({ ax: s.x, ay: s.y, bx: sc.x, by: sc.y, feet: gridFeet(s.x, s.y, sc.x, sc.y, g, p.diagonal ?? '5') });
+    const allHidden = scene.tokens.filter(x => dragStart.current.has(x.id)).every(x => x.hidden);
+    p.onMeasure?.({ ax: s.x, ay: s.y, bx: sc.x, by: sc.y, feet: gridFeet(s.x, s.y, sc.x, sc.y, g, p.diagonal ?? '5'), dmOnly: allHidden });
   };
   const onTokenDragEnd = (t: Token, e: Konva.KonvaEventObject<DragEvent>) => {
     const s = dragStart.current.get(t.id);

@@ -3,7 +3,8 @@ import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scen
 // The table window runs on the same computer (dragged onto the TV), so the DM window
 // streams a players-safe copy of the state over a BroadcastChannel.
 
-export interface Measure { ax: number; ay: number; bx: number; by: number; feet: number }
+// dmOnly: measuring while moving hidden tokens, so players must not see it.
+export interface Measure { ax: number; ay: number; bx: number; by: number; feet: number; dmOnly?: boolean }
 export interface Ping { x: number; y: number; at: number }
 export interface Reveal { kind: 'roll'; roll: RollResult; at: number }
 export interface LootReveal { kind: 'loot'; title: string; items: LootItem[]; at: number }

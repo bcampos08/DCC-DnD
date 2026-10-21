@@ -139,7 +139,7 @@ export default function DMView() {
               ui.set({ tool: 'select' });
               ui.toast(`Grid set to ${Math.round(sz)} px squares. Fine-tune in Scenes if needed.`);
             }}
-            onMeasure={m => { setMeasure(m); send({ type: 'measure', m }); }}
+            onMeasure={m => { setMeasure(m); send({ type: 'measure', m: m?.dmOnly ? null : m }); }}
             onPing={(x, y) => { const p = { x, y, at: Date.now() }; setPings(ps => [...ps.filter(q => Date.now() - q.at < 2500), p]); send({ type: 'ping', p }); }}
             onTokenDblClick={id => { const t = scene.tokens.find(t => t.id === id); if (t?.monsterId) ui.set({ tab: 'monsters', monsterId: t.monsterId }); if (t?.charId) ui.set({ tab: 'party' }); }}
             onAskText={(x, y) => { const text = prompt('Label text'); if (text) upd(s => { s.drawings.push({ id: uid(), t: 'text', x, y, text, color: ui.color, size: Math.max(18, scene.grid.size * 0.4), dmOnly: ui.dmOnlyDraw }); }); }}
