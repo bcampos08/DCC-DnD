@@ -5,6 +5,7 @@ import { useCampaign } from '../../store';
 import { crText } from '../../lib/rules';
 import { addMonsters } from '../../lib/actions';
 import StatBlock from '../StatBlock';
+import MonsterNotes from '../MonsterNotes';
 import MonsterEditor from '../MonsterEditor';
 import type { Monster } from '../../types';
 
@@ -48,6 +49,7 @@ export default function MonstersPanel() {
           <label className="check"><input type="checkbox" checked={rollHp} onChange={e => setRollHp(e.target.checked)} /> Roll HP</label>
           <button className="btn primary" onClick={() => { addMonsters(m, count, { hidden, rollHp }); useUI.getState().toast(`Added ${count} ${m.name}${count > 1 ? 's' : ''} to the map`); }}>Add to map</button>
         </div>
+        <div className="pad-x"><MonsterNotes monsterId={m.id} /></div>
         <StatBlock m={m} />
         {editing && <MonsterEditor initial={editing} onClose={() => setEditing(null)} />}
       </div>

@@ -3,6 +3,7 @@ import { useCampaign, creatureOf } from '../store';
 import { useUI } from '../ui';
 import HpControl, { HpBar } from './HpControl';
 import Conditions from './Conditions';
+import MonsterNotes from './MonsterNotes';
 import { saveAsset } from '../lib/assets';
 import { TOKEN_COLORS } from '../lib/rules';
 import type { Token } from '../types';
@@ -68,6 +69,7 @@ export default function TokenCard() {
           <label>AC <input type="number" value={t.ac} onChange={e => st.updateToken(sceneId, t.id, { ac: +e.target.value })} /></label>
         </div>
       )}
+      <MonsterNotes monsterId={t.monsterId} token={{ sceneId, id: t.id, note: t.note }} />
       <label className="check"><input type="checkbox" checked={c.concentrating} onChange={e => setConc(e.target.checked)} /> Concentrating</label>
       <details className="tc-more" open={c.conditions.length > 0}>
         <summary>Conditions{c.conditions.length ? ` (${c.conditions.length})` : ''}</summary>

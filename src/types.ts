@@ -83,6 +83,7 @@ export interface Token {
   ac: number;
   conditions: string[];
   concentrating?: boolean;
+  note?: string; // DM-only note for this one token
 }
 
 export type FogOp =
@@ -178,6 +179,8 @@ export interface Campaign {
   partyLoot: LootItem[];
   customMonsters: Monster[];
   settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number };
+  monsterNotes: Record<string, string>; // by monster id, shared by every copy
+  notes: Note[];
 }
 
 // ----- Full character sheet read from D&D Beyond -----
@@ -211,3 +214,5 @@ export interface DdbSheet {
   notes: { label: string; text: string }[];
   bio: { label: string; value: string }[];
 }
+
+export interface Note { id: string; title: string; body: string; sceneId?: string; updatedAt: number }

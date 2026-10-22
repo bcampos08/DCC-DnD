@@ -10,6 +10,7 @@ import PartyPanel from '../components/panels/PartyPanel';
 import LootPanel from '../components/panels/LootPanel';
 import ScenesPanel from '../components/panels/ScenesPanel';
 import LogPanel from '../components/panels/LogPanel';
+import NotesPanel from '../components/panels/NotesPanel';
 import { useCampaign, creatureOf, campaignData } from '../store';
 import { useUI, type Tab } from '../ui';
 import { channel, send, tableState, type Measure, type Ping } from '../lib/sync';
@@ -22,7 +23,7 @@ import { nextTurn } from '../lib/actions';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'combat', label: '⚔ Combat' }, { id: 'monsters', label: '🐉 Monsters' }, { id: 'party', label: '🛡 Party' },
-  { id: 'loot', label: '💰 Loot' }, { id: 'scenes', label: '🗺 Scenes' }, { id: 'log', label: '🎲 Log' },
+  { id: 'loot', label: '💰 Loot' }, { id: 'scenes', label: '🗺 Scenes' }, { id: 'notes', label: '📝 Notes' }, { id: 'log', label: '🎲 Log' },
 ];
 
 export function fitCamera(scene: Scene, w: number, h: number): Camera {
@@ -186,6 +187,7 @@ export default function DMView() {
             {ui.tab === 'party' && <PartyPanel />}
             {ui.tab === 'loot' && <LootPanel />}
             {ui.tab === 'scenes' && <ScenesPanel />}
+            {ui.tab === 'notes' && <NotesPanel />}
             {ui.tab === 'log' && <LogPanel />}
           </div>
         </aside>

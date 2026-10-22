@@ -34,7 +34,7 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
   if (sc) {
     scene = {
       ...sc,
-      tokens: sc.tokens.filter(t => !t.hidden).map(t => (t.kind === 'pc' ? t : { ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 })),
+      tokens: sc.tokens.filter(t => !t.hidden).map(({ note: _note, ...t }) => (t.kind === 'pc' ? t : { ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 })),
       drawings: sc.drawings.filter(d => !d.dmOnly),
     };
   }
