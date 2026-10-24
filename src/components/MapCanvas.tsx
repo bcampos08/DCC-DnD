@@ -43,6 +43,7 @@ interface Props {
   onTokenDblClick?: (id: string) => void;
   onAskText?: (x: number, y: number) => void;
   vision?: { x: number; y: number; r: number }[] | null; // dark scenes: current sight circles
+  playersCanSee?: (x: number, y: number) => boolean; // used to keep enemy move arrows off the table
 }
 
 type Draft =
@@ -222,8 +223,16 @@ export default function MapCanvas(p: Props) {
     dragStart.current.forEach((v, k) => next.set(k, { x: v.x + dx, y: v.y + dy }));
     setDragPos(next);
     const sc = snapCentre(e.target.x(), e.target.y(), t.size, g);
-    const allHidden = scene.tokens.filter(x => dragStart.current.has(x.id)).every(x => x.hidden);
-    p.onMeasure?.({ ax: s.x, ay: s.y, bx: sc.x, by: sc.y, feet: gridFeet(s.x, s.y, sc.x, sc.y, g, p.diagonal ?? '5'), dmOnly: allHidden });
+    // Players only see the arrow if some moved token is visible to them at both ends of the move:
+    // not hidden, and (for enemies) not starting or ending in fog or out of the players' sight.
+    const see = p.playersCanSee ?? (() => true);
+    const unseen = scene.tokens.filter(x => dragStart.current.has(x.id)).every(x => {
+      if (x.hidden) return true;
+      if (x.kind === 'pc') return false;
+      const st0 = dragStart.current.get(x.id)!;
+      return !see(st0.x, st0.y) || !see(st0.x + dx, st0.y + dy);
+    });
+    p.onMeasure?.({ ax: s.x, ay: s.y, bx: sc.x, by: sc.y, feet: gridFeet(s.x, s.y, sc.x, sc.y, g, p.diagonal ?? '5'), dmOnly: unseen });
   };
   const onTokenDragEnd = (t: Token, e: Konva.KonvaEventObject<DragEvent>) => {
     const s = dragStart.current.get(t.id);

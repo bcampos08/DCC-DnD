@@ -61,6 +61,20 @@ function opCovers(op: FogOp, x: number, y: number) {
   return op.pts.length === 2 && Math.hypot(x - op.pts[0], y - op.pts[1]) <= op.r;
 }
 
+// Is this spot clear of full fog (revealed by hand or explored)?
+export function revealedAt(scene: Scene, x: number, y: number) {
+  let open = false;
+  for (const op of scene.fog.ops) if (opCovers(op, x, y)) open = op.mode === 'reveal';
+  return open;
+}
+
+// Could players see a creature standing here? Accounts for full fog and, in dark scenes, current sight.
+export function playersCanSee(scene: Scene, circles: Circle[] | null, x: number, y: number) {
+  if (!scene.fog.enabled) return true;
+  if (circles) return seenNow(scene, circles, x, y);
+  return revealedAt(scene, x, y);
+}
+
 // Can players see a creature standing here right now? (Inside someone's vision, or in an area the DM revealed by hand.)
 export function seenNow(scene: Scene, circles: Circle[], x: number, y: number) {
   if (circles.some(c => Math.hypot(c.x - x, c.y - y) <= c.r)) return true;
