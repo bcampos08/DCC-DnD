@@ -81,7 +81,22 @@ export default function DMView() {
   // Stream a players-safe copy of the state to the table window.
   useEffect(() => {
     let raf = 0;
-    const push = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const u = useUI.getState(); send({ type: 'state', state: tableState(campaignData(), u.cameraNonce, u.tableCamera) }); }); };
+    const push = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const u = useUI.getState();
+        const ts = tableState(campaignData(), u.cameraNonce, u.tableCamera);
+        send({ type: 'state', state: ts });
+        // Remember every combatant the players have now seen, so they stay in the turn order.
+        const enc = useCampaign.getState().encounter;
+        if (enc.active && ts.scene) {
+          const seen = new Set(enc.seenTokens ?? []);
+          const inFight = new Set(enc.entries.flatMap(e => e.tokenIds));
+          const fresh = ts.scene.tokens.filter(t => t.kind !== 'pc' && inFight.has(t.id) && !seen.has(t.id)).map(t => t.id);
+          if (fresh.length) useCampaign.getState().set(d => { d.encounter.seenTokens = [...seen, ...fresh]; });
+        }
+      });
+    };
     const un1 = useCampaign.subscribe(push);
     const un2 = useUI.subscribe((s, prev) => { if (s.cameraNonce !== prev.cameraNonce) push(); });
     const onMsg = (e: MessageEvent) => { if (e.data?.type === 'hello') { setTableOpen(true); push(); } if (e.data?.type === 'bye') setTableOpen(false); };

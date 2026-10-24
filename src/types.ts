@@ -159,6 +159,8 @@ export interface Encounter {
   round: number;
   turn: number;
   entries: InitEntry[];
+  // Tokens players have seen during this fight. They stay in the players' turn order even if hidden again.
+  seenTokens?: string[];
 }
 
 export interface RollPart { dice: string; rolls: number[]; kept: boolean[]; sides: number }

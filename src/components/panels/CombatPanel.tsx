@@ -59,6 +59,7 @@ export default function CombatPanel() {
     const char = e.charId ? chars.find(c => c.id === e.charId) : undefined;
     const one = toks.length === 1 ? creatureOf(toks[0], chars) : char ? creatureOf({ charId: char.id } as never, chars) : null;
     const hiddenAll = toks.length > 0 && toks.every(t => t.hidden);
+    const seenByPlayers = e.tokenIds.some(id => (enc.seenTokens ?? []).includes(id));
     const targets = e.charId ? [{ charId: e.charId }] : toks.map(t => ({ tokenId: t.id }));
     return (
       <li key={e.id} className={'init-row' + (i === enc.turn ? ' current' : '') + (hiddenAll ? ' hidden-tok' : '')}>
@@ -68,7 +69,7 @@ export default function CombatPanel() {
         </div>
         <div className="init-body">
           <button className="init-name" onClick={() => focus(e.tokenIds)}>
-            {e.name}{hiddenAll && <span className="tag">hidden</span>}{e.charId && <span className="tag pc">PC</span>}
+            {e.name}{hiddenAll && <span className="tag" title={seenByPlayers ? 'Hidden on the map, but players already saw it, so it stays in their turn order' : 'Players have not seen it yet'}>{seenByPlayers ? 'hidden · in players\' order' : 'hidden'}</span>}{e.charId && <span className="tag pc">PC</span>}
           </button>
           {one && <div className="row gap"><HpBar hp={one.hp} max={one.maxHp} temp={one.tempHp} /><span className="ac-badge">AC {one.ac}</span><CondChips ids={one.conditions} /></div>}
           {toks.length > 1 && (

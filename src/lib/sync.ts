@@ -44,7 +44,8 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     };
   }
   const visible = new Set(scene?.tokens.map(t => t.id));
-  const entries = c.encounter.entries.filter(e => (e.charId || e.tokenIds.some(id => visible.has(id))) && !isDefeatedIn(e, c));
+  const seen = new Set(c.encounter.seenTokens ?? []);
+  const entries = c.encounter.entries.filter(e => (e.charId || e.tokenIds.some(id => visible.has(id) || seen.has(id))) && !isDefeatedIn(e, c));
   return {
     scene,
     chars: c.characters.map(({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves }) => ({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves })),
