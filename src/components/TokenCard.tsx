@@ -4,6 +4,9 @@ import { useUI } from '../ui';
 import HpControl, { HpBar } from './HpControl';
 import Conditions from './Conditions';
 import MonsterNotes from './MonsterNotes';
+import DeathSaves from './DeathSaves';
+import { findMonster } from '../lib/monsters';
+import { LIGHTS } from '../lib/vision';
 import { saveAsset } from '../lib/assets';
 import { TOKEN_COLORS } from '../lib/rules';
 import type { Token } from '../types';
@@ -51,6 +54,8 @@ export default function TokenCard() {
 
   const t = toks[0];
   const c = creatureOf(t, chars);
+  const ch = t.charId ? chars.find(x => x.id === t.charId) : undefined;
+  const speed = t.monsterId ? findMonster(t.monsterId)?.speed : ch ? [ch.speed, ...(ch.sheet?.speeds ?? [])].filter(Boolean).join(', ') : undefined;
   return (
     <div className="token-card">
       <div className="tc-head">
@@ -61,6 +66,8 @@ export default function TokenCard() {
         <HpBar hp={c.hp} max={c.maxHp} temp={c.tempHp} />
         <span className="ac-badge" title="Armor Class">AC {c.ac}</span>
       </div>
+      {speed && <div className="tc-speed" title="Movement speed">🏃 {speed}</div>}
+      {t.charId && <DeathSaves charId={t.charId} />}
       <HpControl targets={targets} />
       {!t.charId && (
         <div className="row gap wrap small-fields">
@@ -75,6 +82,13 @@ export default function TokenCard() {
         <summary>Conditions{c.conditions.length ? ` (${c.conditions.length})` : ''}</summary>
         <Conditions value={c.conditions} onToggle={toggleCond} />
       </details>
+      {t.kind === 'pc' && (
+        <label className="row gap sm-label" title="Light this character carries. With fog on, it clears fog around them as they move.">Carrying light
+          <select value={t.light ?? 0} onChange={e => upd({ light: +e.target.value || undefined })}>
+            {LIGHTS.map(l => <option key={l.feet} value={l.feet}>{l.label}</option>)}
+          </select>
+        </label>
+      )}
       <div className="row gap wrap">
         <select value={t.size} onChange={e => upd({ size: +e.target.value })} aria-label="Size">{SIZES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
         <div className="swatches">{TOKEN_COLORS.map(col => <button key={col} className={'sw' + (t.color === col ? ' on' : '')} style={{ background: col }} onClick={() => upd({ color: col })} aria-label={`Colour ${col}`} />)}</div>

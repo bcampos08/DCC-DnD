@@ -12,7 +12,7 @@ const ORD = ['Cantrips', '1st level', '2nd level', '3rd level', '4th level', '5t
 
 // Full read-only sheet for a character imported from D&D Beyond. Slots and limited uses can be
 // ticked here to track them at the table; the next Sync replaces them with D&D Beyond's numbers.
-export default function CharacterSheet({ charId, onClose }: { charId: string; onClose: () => void }) {
+export default function CharacterSheet({ charId, onClose, onEdit }: { charId: string; onClose: () => void; onEdit?: (c: Character) => void }) {
   const c = useCampaign(s => s.characters.find(x => x.id === charId));
   const allLoot = useCampaign(s => s.partyLoot);
   const loot = allLoot.filter(l => l.to === charId);
@@ -41,7 +41,8 @@ export default function CharacterSheet({ charId, onClose }: { charId: string; on
           <span><b>{c.passivePerception ?? '–'}</b>Passive Perc.</span>
         </div>
       </div>
-      {!sh && <p className="callout">This character has only the basics. Press <b>Sync</b> (D&D Beyond characters) to pull in spells, features and the rest.</p>}
+      {!sh && c.ddbId && <p className="callout">Press <b>Sync</b> on the Party tab to pull in spells, features and the rest from D&D Beyond.</p>}
+      {!c.ddbId && onEdit && <div className="row gap"><span className="hint grow">Hand-made character.</span><button className="btn sm" onClick={() => onEdit(c)}>✎ Edit character</button></div>}
       <nav className="sheet-tabs">{tabs.map(([id, label]) => <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>)}</nav>
 
       {tab === 'overview' && (
@@ -224,7 +225,8 @@ export default function CharacterSheet({ charId, onClose }: { charId: string; on
           {sh?.bio.length ? <Facts rows={sh.bio.map(b => [b.label, b.value])} /> : null}
           {sh?.traits.map(t => (<div key={t.label}><h4 className="sb-h">{t.label}</h4><p className="desc">{t.text}</p></div>))}
           {sh?.notes.map(t => (<div key={t.label}><h4 className="sb-h">{t.label}</h4><p className="desc">{t.text}</p></div>))}
-          {sh && !sh.background && !sh.traits.length && !sh.notes.length && !sh.bio.length && <p className="hint">Nothing written yet.</p>}
+          {c.notes && (<><h4 className="sb-h">Notes</h4><p className="desc"><DiceText text={c.notes} who={who} label="Note" /></p></>)}
+          {!c.notes && (!sh || (!sh.background && !sh.traits.length && !sh.notes.length && !sh.bio.length)) && <p className="hint">Nothing written yet.</p>}
         </div>
       )}
     </Modal>

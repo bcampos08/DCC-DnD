@@ -71,8 +71,9 @@ export default function TableView() {
   const chars = new Map(state.chars.map(c => [c.id, c]));
   const creature = (t: Token) => {
     const c = t.charId ? chars.get(t.charId) : undefined;
-    if (c) return { name: c.name, hp: c.hp, maxHp: c.maxHp, tempHp: c.tempHp, conditions: c.conditions, concentrating: !!c.concentrating, portrait: c.portrait };
-    return { name: t.name, hp: t.hp, maxHp: t.maxHp, tempHp: 0, conditions: t.conditions, concentrating: !!t.concentrating };
+    if (c) return { name: c.name, hp: c.hp, maxHp: c.maxHp, tempHp: c.tempHp, conditions: c.conditions, concentrating: !!c.concentrating, portrait: c.portrait, ac: c.ac, deathSaves: c.deathSaves };
+    // Monster AC is blanked in the players' copy, so no badge shows.
+    return { name: t.name, hp: t.hp, maxHp: t.maxHp, tempHp: 0, conditions: t.conditions, concentrating: !!t.concentrating, ac: t.ac };
   };
   const enc = state.encounter;
   const current = enc.active && enc.turn >= 0 ? enc.entries[enc.turn] : undefined;

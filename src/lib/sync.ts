@@ -1,3 +1,4 @@
+import { isDefeatedIn } from './defeat';
 import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scene } from '../types';
 
 // The table window runs on the same computer (dragged onto the TV), so the DM window
@@ -10,7 +11,7 @@ export interface Reveal { kind: 'roll'; roll: RollResult; at: number }
 export interface LootReveal { kind: 'loot'; title: string; items: LootItem[]; at: number }
 export interface TableState {
   scene: Scene | null;
-  chars: Pick<Character, 'id' | 'name' | 'portrait' | 'color' | 'conditions' | 'concentrating' | 'hp' | 'maxHp' | 'tempHp' | 'ac'>[];
+  chars: Pick<Character, 'id' | 'name' | 'portrait' | 'color' | 'conditions' | 'concentrating' | 'hp' | 'maxHp' | 'tempHp' | 'ac' | 'deathSaves'>[];
   encounter: Encounter;
   showMonsterNames: boolean;
   camera: { cx: number; cy: number; viewW: number } | null;
@@ -39,10 +40,10 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     };
   }
   const visible = new Set(scene?.tokens.map(t => t.id));
-  const entries = c.encounter.entries.filter(e => e.charId || e.tokenIds.some(id => visible.has(id)));
+  const entries = c.encounter.entries.filter(e => (e.charId || e.tokenIds.some(id => visible.has(id))) && !isDefeatedIn(e, c));
   return {
     scene,
-    chars: c.characters.map(({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac }) => ({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac })),
+    chars: c.characters.map(({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves }) => ({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves })),
     encounter: { ...c.encounter, entries, turn: c.encounter.entries[c.encounter.turn] ? entries.indexOf(c.encounter.entries[c.encounter.turn]) : -1 },
     showMonsterNames: c.settings.showMonsterNames,
     camera, cameraNonce,

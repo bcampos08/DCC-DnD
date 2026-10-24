@@ -15,7 +15,8 @@ import { useCampaign, creatureOf, campaignData } from '../store';
 import { useUI, type Tab } from '../ui';
 import { channel, send, tableState, type Measure, type Ping } from '../lib/sync';
 import { uid } from '../lib/id';
-import type { Camera, Scene } from '../types';
+import type { Camera, Scene, Token } from '../types';
+import { revealOp } from '../lib/vision';
 import { loadSrd } from '../lib/monsters';
 import CloudModal from '../components/CloudModal';
 import { cloudInfo, currentUser, isDirty, lastCloudSave, loadFromCloud, onDirtyChange } from '../lib/cloud';
@@ -152,7 +153,17 @@ export default function DMView() {
             diagonal={st.settings.diagonal} drawStyle={drawStyle}
             onSelect={(ids, add) => ui.set(s => ({ selected: add ? [...new Set([...s.selected, ...ids])] : ids, selectedTemplate: null }))}
             onSelectTemplate={id => ui.set({ selectedTemplate: id })}
-            onMoveTokens={moves => upd(s => { moves.forEach(m => { const t = s.tokens.find(t => t.id === m.id); if (t) { t.x = m.x; t.y = m.y; } }); })}
+            onMoveTokens={moves => upd(s => {
+              moves.forEach(m => {
+                const t = s.tokens.find(t => t.id === m.id);
+                if (!t) return;
+                const from = { x: t.x, y: t.y };
+                t.x = m.x; t.y = m.y;
+                // Player tokens clear fog along their path, as far as they can see.
+                const op = revealOp(s as Scene, t as Token, st.characters.find(c => c.id === t.charId), from, m);
+                if (op) s.fog.ops.push(op);
+              });
+            })}
             onFog={op => upd(s => { s.fog.ops.push(op); })}
             onDraw={d => upd(s => { s.drawings.push(d); })}
             onRemoveDrawing={id => upd(s => { s.drawings = s.drawings.filter(d => d.id !== id); })}

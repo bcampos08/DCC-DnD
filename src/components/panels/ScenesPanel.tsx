@@ -69,7 +69,21 @@ export default function ScenesPanel() {
         <button className="btn sm" onClick={() => st.updateScene(activeId, s => { s.fog.enabled = true; s.fog.ops = []; })}>Hide everything</button>
         <button className="btn sm" onClick={() => st.updateScene(activeId, s => { s.fog.ops = [{ t: 'all', mode: 'reveal' }]; })}>Reveal everything</button>
       </div>
-      <p className="hint">Use the fog tools on the left. You see fog as a shaded overlay; players see solid black.</p>
+      <label className="check"><input type="checkbox" checked={scene.fog.autoReveal !== false} onChange={e => st.updateScene(activeId, s => { s.fog.autoReveal = e.target.checked; }, false)} /> Player tokens reveal fog as they move</label>
+      {scene.fog.autoReveal !== false && (
+        <div className="row gap wrap sm-label">
+          <label className="row gap">Lighting
+            <select value={scene.fog.light ?? 'lit'} onChange={e => st.updateScene(activeId, s => { s.fog.light = e.target.value as 'lit' | 'dark'; }, false)}>
+              <option value="lit">Lit: everyone sees</option>
+              <option value="dark">Dark: darkvision and carried light only</option>
+            </select>
+          </label>
+          {(scene.fog.light ?? 'lit') === 'lit' && (
+            <label className="row gap">Sight <input type="number" min={5} step={5} style={{ width: 64 }} value={scene.fog.sightFeet ?? 60} onChange={e => st.updateScene(activeId, s => { s.fog.sightFeet = Math.max(5, +e.target.value || 60); }, false)} /> ft</label>
+          )}
+        </div>
+      )}
+      <p className="hint">Use the fog tools on the left. You see fog as a shaded overlay; players see solid black. Revealing by movement clears a circle; it doesn't stop at walls, so hide anything behind a wall again with the Hide tools.</p>
 
       <h3 className="h">Table settings</h3>
       <label className="check"><input type="checkbox" checked={settings.showMonsterNames} onChange={e => st.set(d => { d.settings.showMonsterNames = e.target.checked; })} /> Show monster names on the table</label>

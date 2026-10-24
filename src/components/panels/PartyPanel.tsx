@@ -11,6 +11,8 @@ import HpControl, { HpBar } from '../HpControl';
 import Conditions, { CondChips } from '../Conditions';
 import Modal from '../Modal';
 import CharacterSheet from '../CharacterSheet';
+import CharEditor from '../CharEditor';
+import DeathSaves from '../DeathSaves';
 import { send } from '../../lib/sync';
 import type { Character, LootItem } from '../../types';
 import { ABILITIES } from '../../types';
@@ -66,6 +68,7 @@ export default function PartyPanel() {
               <span className="muted sm">PP {c.passivePerception ?? '–'} · Init {fmtMod(c.initBonus)}</span>
             </div>
             <CondChips ids={c.conditions} />
+            <DeathSaves charId={c.id} compact />
             <Inventory c={c} items={loot.filter(it => it.to === c.id)} />
             {open === c.id && (
               <div className="char-detail">
@@ -97,7 +100,7 @@ export default function PartyPanel() {
                 {c.syncedAt && <small className="muted">Last synced {new Date(c.syncedAt).toLocaleString()}</small>}
               </div>
             )}
-            {open !== c.id && <div className="row gap"><button className="btn sm" onClick={() => addCharacterToken(c)}>Place token</button><button className="btn sm" onClick={() => setSheetFor(c.id)}>📜 Full sheet</button><button className="btn sm ghost" onClick={() => setOpen(c.id)}>Details</button></div>}
+            {open !== c.id && <div className="row gap"><button className="btn sm" onClick={() => addCharacterToken(c)}>Place token</button><button className="btn sm" onClick={() => setSheetFor(c.id)}>📜 Full sheet</button>{!c.ddbId && <button className="btn sm" onClick={() => setEditing(c)}>✎ Edit</button>}<button className="btn sm ghost" onClick={() => setOpen(c.id)}>Details</button></div>}
           </li>
         ))}
       </ul>
@@ -110,10 +113,10 @@ export default function PartyPanel() {
         {!!stash.length && <button className="btn sm" onClick={() => send({ type: 'popup', p: { kind: 'loot', title: 'Party stash', items: stash.slice(0, 20), at: Date.now() } })}>Show stash on table</button>}
       </details>
 
-      {sheetFor && <CharacterSheet charId={sheetFor} onClose={() => setSheetFor(null)} />}
+      {sheetFor && <CharacterSheet charId={sheetFor} onClose={() => setSheetFor(null)} onEdit={c => { setSheetFor(null); setEditing(c); }} />}
       {adding === 'ddb' && <DdbImport onClose={() => setAdding(null)} />}
-      {adding === 'manual' && <CharForm onClose={() => setAdding(null)} />}
-      {editing && <CharForm initial={editing} onClose={() => setEditing(null)} />}
+      {adding === 'manual' && <CharEditor onClose={() => setAdding(null)} />}
+      {editing && <CharEditor initial={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
@@ -155,37 +158,6 @@ function DdbImport({ onClose }: { onClose: () => void }) {
         </div>
       )}
       <p className="hint">The import is read-only: nothing is changed on D&D Beyond. HP you track here stays here. Press Sync after someone levels up.</p>
-    </Modal>
-  );
-}
-
-function CharForm({ initial, onClose }: { initial?: Character; onClose: () => void }) {
-  const [c, setC] = useState<Character>(initial ?? { id: uid(), name: '', summary: '', ac: 10, maxHp: 10, hp: 10, tempHp: 0, initBonus: 0, passivePerception: 10, conditions: [], color: PC_COLORS[useCampaign.getState().characters.length % PC_COLORS.length] });
-  const up = (p: Partial<Character>) => setC(x => ({ ...x, ...p }));
-  const save = () => {
-    if (!c.name.trim()) return;
-    useCampaign.getState().set(d => {
-      const i = d.characters.findIndex(x => x.id === c.id);
-      if (i >= 0) d.characters[i] = c; else d.characters.push(c);
-    });
-    onClose();
-  };
-  return (
-    <Modal title={initial ? `Edit ${initial.name}` : 'Add character'} onClose={onClose}>
-      <div className="form-grid">
-        <label className="field">Name<input value={c.name} onChange={e => up({ name: e.target.value })} autoFocus /></label>
-        <label className="field">Player<input value={c.player ?? ''} onChange={e => up({ player: e.target.value })} /></label>
-        <label className="field span2">Description<input value={c.summary ?? ''} onChange={e => up({ summary: e.target.value })} placeholder="Level 3 Human Fighter" /></label>
-        <label className="field">AC<input type="number" value={c.ac} onChange={e => up({ ac: +e.target.value })} /></label>
-        <label className="field">Max HP<input type="number" value={c.maxHp} onChange={e => up({ maxHp: +e.target.value, hp: initial ? c.hp : +e.target.value })} /></label>
-        <label className="field">Current HP<input type="number" value={c.hp} onChange={e => up({ hp: +e.target.value })} /></label>
-        <label className="field">Initiative bonus<input type="number" value={c.initBonus} onChange={e => up({ initBonus: +e.target.value })} /></label>
-        <label className="field">Passive Perception<input type="number" value={c.passivePerception ?? 10} onChange={e => up({ passivePerception: +e.target.value })} /></label>
-        <label className="field">Portrait URL<input value={c.portrait ?? ''} onChange={e => up({ portrait: e.target.value || undefined })} /></label>
-      </div>
-      <div className="swatches">{PC_COLORS.map(col => <button key={col} className={'sw' + (c.color === col ? ' on' : '')} style={{ background: col }} onClick={() => up({ color: col })} aria-label={`Colour ${col}`} />)}</div>
-      {c.ddbId && <p className="hint">Imported from D&D Beyond. Syncing will overwrite these numbers.</p>}
-      <div className="row gap end"><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save</button></div>
     </Modal>
   );
 }

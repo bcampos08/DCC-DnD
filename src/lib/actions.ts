@@ -1,12 +1,14 @@
 import { useCampaign, creatureOf } from '../store';
 import { useUI } from '../ui';
-import type { Character, InitEntry, Monster, Token } from '../types';
+import type { Campaign, Character, InitEntry, Monster, Token } from '../types';
 import { uid } from './id';
 import { snapCentre } from './geometry';
 import { SIZE_SQUARES, TOKEN_COLORS } from './rules';
 import { evaluate, modOf, d20Expr } from './dice';
 import { findMonster } from './monsters';
 import { roll } from './roll';
+import { revealOp } from './vision';
+import { isDefeatedIn } from './defeat';
 
 const hashColor = (s: string) => TOKEN_COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % TOKEN_COLORS.length];
 
@@ -69,7 +71,8 @@ export function addCharacterToken(c: Character) {
   if (existing) { useUI.getState().set({ selected: [existing.id] }); return; }
   const [p] = spots(1, 1, sc.tokens);
   const t: Token = { id: uid(), name: c.name, x: p.x, y: p.y, size: 1, color: c.color, kind: 'pc', charId: c.id, hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: c.ac, conditions: [] };
-  st.updateScene(sc.id, s => { s.tokens.push(t); });
+  const op = revealOp(sc, t, c, p, p);
+  st.updateScene(sc.id, s => { s.tokens.push(t); if (op) s.fog.ops.push(op); });
 }
 
 export function findToken(id: string) {
@@ -88,17 +91,33 @@ export function changeHp(target: { tokenId?: string; charId?: string }, amount: 
   if (!cur || !amount) return;
   let { hp, tempHp } = cur;
   const max = cur.maxHp;
+  const wasDown = max > 0 && hp <= 0;
+  let overflow = 0; // damage past 0 HP
   if (kind === 'heal') hp = Math.min(max || Infinity, hp + amount);
   else if (kind === 'temp') tempHp = Math.max(tempHp, amount);
   else {
     const fromTemp = Math.min(tempHp, amount);
     tempHp -= fromTemp;
-    hp = Math.max(0, hp - (amount - fromTemp));
+    const rest = amount - fromTemp;
+    overflow = Math.max(0, rest - hp);
+    hp = Math.max(0, hp - rest);
   }
-  if (charId) st.updateChar(charId, { hp, tempHp });
-  else if (tokenRef) st.updateToken(tokenRef.scene.id, tokenRef.token.id, { hp, tempHp });
-
   const name = charId ? st.characters.find(c => c.id === charId)!.name : tokenRef!.token.name;
+
+  if (charId) {
+    // Death saves (PHB p.197): healing clears them; damage at 0 HP is a failed save;
+    // damage left over that equals max HP kills outright.
+    const c = st.characters.find(c => c.id === charId)!;
+    let ds = c.deathSaves ?? { success: 0, fail: 0 };
+    if (hp > 0) ds = { success: 0, fail: 0 };
+    else if (kind === 'damage' && max > 0) {
+      if (overflow >= max) { ds = { ...ds, fail: 3 }; useUI.getState().toast(`${name} takes massive damage and dies outright`); }
+      else if (wasDown) { ds = { ...ds, fail: Math.min(3, ds.fail + 1) }; useUI.getState().toast(`${name} takes damage while down: 1 failed death save`); }
+      else ds = { success: 0, fail: 0 };
+    }
+    st.updateChar(charId, { hp, tempHp, deathSaves: ds });
+  } else if (tokenRef) st.updateToken(tokenRef.scene.id, tokenRef.token.id, { hp, tempHp });
+
   if (kind === 'damage' && cur.concentrating) {
     const dc = Math.max(10, Math.floor(amount / 2));
     const m = tokenRef?.token.monsterId ? findMonster(tokenRef.token.monsterId) : undefined;
@@ -107,7 +126,7 @@ export function changeHp(target: { tokenId?: string; charId?: string }, amount: 
       useUI.getState().toast(`${name} is concentrating — DC ${dc} Con save`, { label: 'Roll save', run: () => { const r = roll(d20Expr(save), `Concentration (DC ${dc})`, name); useUI.getState().toast(r.total >= dc ? `${name} keeps concentration (${r.total})` : `${name} loses concentration (${r.total})`); if (r.total < dc && tokenRef) st.updateToken(tokenRef.scene.id, tokenRef.token.id, { concentrating: false }); } });
     } else useUI.getState().toast(`${name} is concentrating — DC ${dc} Constitution save`);
   }
-  if (kind === 'damage' && hp === 0 && max > 0) useUI.getState().toast(`${name} drops to 0 HP`);
+  if (kind === 'damage' && hp === 0 && max > 0 && !wasDown) useUI.getState().toast(charId ? `${name} drops to 0 HP and is dying` : `${name} drops to 0 HP`);
 }
 
 // ----- initiative -----
@@ -173,9 +192,16 @@ export function nextTurn(dir = 1) {
   st.set(d => {
     const n = d.encounter.entries.length;
     if (!n) return;
-    let t = d.encounter.turn + dir;
-    if (t >= n) { t = 0; d.encounter.round++; }
-    if (t < 0) { if (d.encounter.round > 1) { t = n - 1; d.encounter.round--; } else t = 0; }
+    // Defeated creatures lose their turns.
+    const alive = d.encounter.entries.map(e => !isDefeated(e as InitEntry));
+    if (!alive.some(Boolean)) return;
+    let t = d.encounter.turn;
+    for (let i = 0; i < n; i++) {
+      t += dir;
+      if (t >= n) { t = 0; d.encounter.round++; }
+      if (t < 0) { if (d.encounter.round > 1) { t = n - 1; d.encounter.round--; } else { t = d.encounter.turn; break; } }
+      if (alive[t]) break;
+    }
     d.encounter.turn = t;
   });
   const e = useCampaign.getState().encounter;
@@ -184,3 +210,12 @@ export function nextTurn(dir = 1) {
 }
 
 export const creatureForToken = (t: Token) => creatureOf(t, useCampaign.getState().characters);
+
+export const isDefeated = (e: InitEntry, campaign: Pick<Campaign, 'characters' | 'scenes'> = useCampaign.getState()) => isDefeatedIn(e, campaign);
+
+export function setDeathSaves(charId: string, ds: { success: number; fail: number }) {
+  useCampaign.getState().updateChar(charId, { deathSaves: ds });
+  const c = useCampaign.getState().characters.find(c => c.id === charId);
+  if (ds.fail >= 3) useUI.getState().toast(`${c?.name} has died`);
+  else if (ds.success >= 3) useUI.getState().toast(`${c?.name} is stable`);
+}

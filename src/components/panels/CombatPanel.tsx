@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useCampaign, creatureOf } from '../../store';
 import { useUI } from '../../ui';
-import { startCombat, sortEntries, rollInitFor, groupMonsters, nextTurn, initDex } from '../../lib/actions';
+import { startCombat, sortEntries, rollInitFor, groupMonsters, nextTurn, initDex, isDefeated } from '../../lib/actions';
+import DeathSaves from '../DeathSaves';
 import { uid } from '../../lib/id';
 import { fmtMod } from '../../lib/dice';
 import HpControl, { HpBar } from '../HpControl';
@@ -50,6 +51,38 @@ export default function CombatPanel() {
   const rollAllMonsters = () => { enc.entries.filter(e => !e.charId && e.init == null).forEach(e => rollInitFor(e.id)); sortEntries(); };
   const end = () => { if (confirm('End combat and clear the initiative order?')) st.set(d => { d.encounter = { active: false, round: 1, turn: 0, entries: [] }; }); };
   const focus = (tokenIds: string[]) => useUI.getState().set({ selected: tokenIds });
+  const campaign = useCampaign.getState();
+  const defeated = new Set(enc.entries.filter(e => isDefeated(e, campaign)).map(e => e.id));
+
+  const row = (e: (typeof enc.entries)[number], i: number) => {
+    const toks = e.tokenIds.map(tokenById).filter(Boolean) as NonNullable<ReturnType<typeof tokenById>>[];
+    const char = e.charId ? chars.find(c => c.id === e.charId) : undefined;
+    const one = toks.length === 1 ? creatureOf(toks[0], chars) : char ? creatureOf({ charId: char.id } as never, chars) : null;
+    const hiddenAll = toks.length > 0 && toks.every(t => t.hidden);
+    const targets = e.charId ? [{ charId: e.charId }] : toks.map(t => ({ tokenId: t.id }));
+    return (
+      <li key={e.id} className={'init-row' + (i === enc.turn ? ' current' : '') + (hiddenAll ? ' hidden-tok' : '')}>
+        <div className="init-num">
+          <input type="number" value={e.init ?? ''} placeholder="–" onChange={ev => setInit(e.id, ev.target.value)} aria-label={`Initiative for ${e.name}`} />
+          {!e.charId && <button className="icon-btn" title={`Roll d20${fmtMod(initDex(e))}`} onClick={() => rollInitFor(e.id)}>🎲</button>}
+        </div>
+        <div className="init-body">
+          <button className="init-name" onClick={() => focus(e.tokenIds)}>
+            {e.name}{hiddenAll && <span className="tag">hidden</span>}{e.charId && <span className="tag pc">PC</span>}
+          </button>
+          {one && <div className="row gap"><HpBar hp={one.hp} max={one.maxHp} temp={one.tempHp} /><span className="ac-badge">AC {one.ac}</span><CondChips ids={one.conditions} /></div>}
+          {toks.length > 1 && (
+            <div className="group-hp">
+              {toks.map(t => { const c = creatureOf(t, chars); return <button key={t.id} className="mini-hp" onClick={() => focus([t.id])} title={t.name}><HpBar hp={c.hp} max={c.maxHp} /></button>; })}
+            </div>
+          )}
+          {e.charId && <DeathSaves charId={e.charId} compact />}
+          {(one || toks.length > 1) && <HpControl compact targets={targets} />}
+        </div>
+        <button className="icon-btn" onClick={() => remove(e.id)} aria-label={`Remove ${e.name}`}>✕</button>
+      </li>
+    );
+  };
 
   return (
     <div className="panel-col">
@@ -69,35 +102,15 @@ export default function CombatPanel() {
           </button>
         ))}
       </div>
-      <ol className="init-list panel-scroll">
-        {enc.entries.map((e, i) => {
-          const toks = e.tokenIds.map(tokenById).filter(Boolean) as NonNullable<ReturnType<typeof tokenById>>[];
-          const char = e.charId ? chars.find(c => c.id === e.charId) : undefined;
-          const one = toks.length === 1 ? creatureOf(toks[0], chars) : char ? creatureOf({ charId: char.id } as never, chars) : null;
-          const hiddenAll = toks.length > 0 && toks.every(t => t.hidden);
-          return (
-            <li key={e.id} className={'init-row' + (i === enc.turn ? ' current' : '') + (hiddenAll ? ' hidden-tok' : '')}>
-              <div className="init-num">
-                <input type="number" value={e.init ?? ''} placeholder="–" onChange={ev => setInit(e.id, ev.target.value)} aria-label={`Initiative for ${e.name}`} />
-                {!e.charId && <button className="icon-btn" title={`Roll d20${fmtMod(initDex(e))}`} onClick={() => rollInitFor(e.id)}>🎲</button>}
-              </div>
-              <div className="init-body">
-                <button className="init-name" onClick={() => focus(e.tokenIds)}>
-                  {e.name}{hiddenAll && <span className="tag">hidden</span>}{e.charId && <span className="tag pc">PC</span>}
-                </button>
-                {one && <div className="row gap"><HpBar hp={one.hp} max={one.maxHp} temp={one.tempHp} /><span className="ac-badge">AC {one.ac}</span><CondChips ids={one.conditions} /></div>}
-                {toks.length > 1 && (
-                  <div className="group-hp">
-                    {toks.map(t => { const c = creatureOf(t, chars); return <button key={t.id} className="mini-hp" onClick={() => focus([t.id])} title={t.name}><HpBar hp={c.hp} max={c.maxHp} /></button>; })}
-                  </div>
-                )}
-                {i === enc.turn && (one || toks.length > 1) && <HpControl compact targets={e.charId ? [{ charId: e.charId }] : toks.map(t => ({ tokenId: t.id }))} />}
-              </div>
-              <button className="icon-btn" onClick={() => remove(e.id)} aria-label={`Remove ${e.name}`}>✕</button>
-            </li>
-          );
-        })}
-      </ol>
+      <div className="panel-scroll">
+        <ol className="init-list">{enc.entries.map((e, i) => (defeated.has(e.id) ? null : row(e, i)))}</ol>
+        {defeated.size > 0 && (
+          <>
+            <h4 className="init-sec">Defeated <small className="muted">(skipped in the turn order; heal them to bring them back)</small></h4>
+            <ol className="init-list defeated">{enc.entries.map((e, i) => (defeated.has(e.id) ? row(e, i) : null))}</ol>
+          </>
+        )}
+      </div>
       <form className="row gap pad-x pad-b" onSubmit={ev => { ev.preventDefault(); if (!adhoc.trim()) return; st.setEntries(l => { l.push({ id: uid(), name: adhoc.trim(), tokenIds: [], init: 20, dex: 0 }); }); setAdhoc(''); }}>
         <input className="grow" value={adhoc} onChange={e => setAdhoc(e.target.value)} placeholder="Add entry (e.g. Lair action)" />
         <button className="btn sm">Add</button>

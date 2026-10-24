@@ -32,7 +32,7 @@ export async function fetchDdb(id: string): Promise<any> {
 
 const AB_BY_ID: Ability[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const AB_NAME: Record<Ability, string> = { str: 'strength', dex: 'dexterity', con: 'constitution', int: 'intelligence', wis: 'wisdom', cha: 'charisma' };
-const SKILLS: [string, Ability][] = [
+export const SKILLS: [string, Ability][] = [
   ['Acrobatics', 'dex'], ['Animal Handling', 'wis'], ['Arcana', 'int'], ['Athletics', 'str'], ['Deception', 'cha'], ['History', 'int'],
   ['Insight', 'wis'], ['Intimidation', 'cha'], ['Investigation', 'int'], ['Medicine', 'wis'], ['Nature', 'int'], ['Perception', 'wis'],
   ['Performance', 'cha'], ['Persuasion', 'cha'], ['Religion', 'int'], ['Sleight of Hand', 'dex'], ['Stealth', 'dex'], ['Survival', 'wis'],

@@ -58,6 +58,13 @@ export interface Character {
   attacks?: { name: string; toHit?: number; damage?: string; notes?: string }[];
   ddbInventory?: { name: string; q: number; equipped?: boolean }[]; // read-only copy from D&D Beyond
   sheet?: DdbSheet; // everything else read from D&D Beyond
+  deathSaves?: { success: number; fail: number }; // tracked at the table while at 0 HP
+  darkvision?: number; // feet
+  // Hand-made characters: what saves and skills are worked out from
+  level?: number;
+  saveProf?: Ability[];
+  skillProf?: Record<string, number>; // 1 proficient, 2 expertise
+  notes?: string;
   conditions: string[];
   concentrating?: boolean;
   ddbId?: string;
@@ -84,6 +91,7 @@ export interface Token {
   conditions: string[];
   concentrating?: boolean;
   note?: string; // DM-only note for this one token
+  light?: number; // feet of light this token carries (torch 40, lantern 60)
 }
 
 export type FogOp =
@@ -130,7 +138,8 @@ export interface Scene {
   tokens: Token[];
   drawings: Drawing[];
   templates: AreaTemplate[];
-  fog: { enabled: boolean; ops: FogOp[] };
+  // autoReveal: player tokens clear fog around them as they move. light 'dark' = only darkvision and carried light count.
+  fog: { enabled: boolean; ops: FogOp[]; autoReveal?: boolean; light?: 'lit' | 'dark'; sightFeet?: number };
   tableCamera?: Camera;
 }
 

@@ -8,7 +8,7 @@ import { cubeRect, gridFeet, snapCentre, snapCorner, templateCells, CONE_HALF } 
 import type { Measure, Ping } from '../lib/sync';
 import type { Tool } from '../ui';
 
-export interface CreatureLook { name: string; hp: number; maxHp: number; tempHp: number; conditions: string[]; concentrating: boolean; portrait?: string }
+export interface CreatureLook { name: string; hp: number; maxHp: number; tempHp: number; conditions: string[]; concentrating: boolean; portrait?: string; ac?: number; deathSaves?: { success: number; fail: number } }
 
 interface Props {
   mode: 'dm' | 'table';
@@ -351,61 +351,83 @@ function TokenNode(props: {
   const { t, g, c, dm } = props;
   const img = useImage(t.image || c.portrait);
   const r = (Math.max(t.size, 0.5) * g) / 2 * 0.9;
-  const dead = c.maxHp > 0 && c.hp <= 0;
+  const isPc = t.kind === 'pc';
+  const ds = c.deathSaves ?? { success: 0, fail: 0 };
+  // Monsters die at 0 HP; players are dying until they fail three death saves.
+  const down = c.maxHp > 0 && c.hp <= 0;
+  const dead = down && (!isPc || ds.fail >= 3);
+  const dying = down && isPc && !dead;
   const frac = c.maxHp > 0 ? Math.max(0, Math.min(1, c.hp / c.maxHp)) : 1;
   const barColor = frac > 0.5 ? '#22c55e' : frac > 0.25 ? '#eab308' : '#ef4444';
   const label = t.kind === 'monster' ? (t.name.match(/(\d+)$/)?.[1] ?? initials(t.name)) : initials(t.name);
-  const conds = c.conditions.slice(0, 6);
   const fontSize = Math.max(10, r * 0.75);
+
+  // Concentration and conditions sit evenly spaced in a ring on the token's edge.
+  const ring: { key: string; text: string; color: string }[] = [
+    ...(c.concentrating ? [{ key: 'conc', text: 'C', color: '#7c3aed' }] : []),
+    ...c.conditions.map(id => ({ key: id, text: COND[id]?.short ?? id.slice(0, 2), color: COND[id]?.color ?? '#555' })),
+  ];
+  const crMax = Math.max(8, g * 0.14);
+  const R = r + crMax * 0.3;
+  const cr = ring.length ? Math.min(crMax, (Math.PI * R / ring.length) * 0.92) : 0;
+  const below = r + (ring.length ? cr * 0.9 : 0) + 4; // first free spot under the token
+  const barH = Math.max(6, g * 0.1);
+  const acR = Math.max(8, r * 0.3);
+
   return (
     <Group x={props.x} y={props.y} draggable={props.draggable} opacity={dm && t.hidden ? 0.45 : 1}
       onMouseDown={props.onDown} onTouchStart={props.onDown} onDragStart={props.onDragStart} onDragMove={props.onDragMove} onDragEnd={props.onDragEnd} onDblClick={props.onDbl} onDblTap={props.onDbl}>
       {props.active && <Circle radius={r + 9} stroke="#fbbf24" strokeWidth={6} shadowColor="#fbbf24" shadowBlur={20} />}
       <Circle radius={r + 2} fill="rgba(0,0,0,.45)" offsetY={-3} />
-      <Circle radius={r} fill={t.color} stroke={props.selected ? '#60a5fa' : t.kind === 'pc' ? '#e5e7eb' : '#111'} strokeWidth={props.selected ? 5 : 3} dash={dm && t.hidden ? [6, 4] : undefined} />
+      <Circle radius={r} fill={t.color} stroke={props.selected ? '#60a5fa' : isPc ? '#e5e7eb' : '#111'} strokeWidth={props.selected ? 5 : 3} dash={dm && t.hidden ? [6, 4] : undefined} />
       {img ? (
         <Group clipFunc={ctx => { ctx.arc(0, 0, r - 2, 0, Math.PI * 2); }}>
           <KImage image={img} x={-r} y={-r} width={r * 2} height={r * 2} />
         </Group>
       ) : (
-        <Text text={label} fontSize={fontSize} fontStyle="bold" fill="#fff" width={r * 2} height={r * 2} x={-r} y={-r} align="center" verticalAlign="middle" listening={false} />
+        <Text text={label} fontSize={fontSize} fontStyle="bold" fill="#fff" width={r * 2} height={r * 2} x={-r} y={-r - (c.ac ? r * 0.18 : 0)} align="center" verticalAlign="middle" listening={false} />
       )}
       {img && t.kind === 'monster' && /\d+$/.test(t.name) && (
-        <Group x={r * 0.62} y={r * 0.62}><Circle radius={Math.max(9, r * 0.3)} fill="#111" stroke="#fff" strokeWidth={1.5} /><Text text={label} fontSize={Math.max(10, r * 0.32)} fill="#fff" fontStyle="bold" x={-20} y={-Math.max(10, r * 0.32) / 2} width={40} align="center" /></Group>
+        <Group x={-r * 0.62} y={r * 0.62}><Circle radius={Math.max(9, r * 0.3)} fill="#111" stroke="#fff" strokeWidth={1.5} /><Text text={label} fontSize={Math.max(10, r * 0.32)} fill="#fff" fontStyle="bold" x={-20} y={-Math.max(10, r * 0.32) / 2} width={40} align="center" /></Group>
       )}
+      {(dead || dying) && <Circle radius={r} fill={dead ? 'rgba(20,20,20,.6)' : 'rgba(60,10,10,.45)'} listening={false} />}
       {dead && (
         <Group listening={false}>
-          <Circle radius={r} fill="rgba(20,20,20,.6)" />
           <Line points={[-r * 0.6, -r * 0.6, r * 0.6, r * 0.6]} stroke="#ef4444" strokeWidth={Math.max(3, r * 0.15)} lineCap="round" />
           <Line points={[r * 0.6, -r * 0.6, -r * 0.6, r * 0.6]} stroke="#ef4444" strokeWidth={Math.max(3, r * 0.15)} lineCap="round" />
         </Group>
       )}
-      {c.maxHp > 0 && !dead && (
-        <Group y={r + 4} listening={false}>
-          <Rect x={-r} width={r * 2} height={Math.max(6, g * 0.1)} fill="#111" cornerRadius={3} stroke="#000" strokeWidth={1} />
-          <Rect x={-r} width={r * 2 * frac} height={Math.max(6, g * 0.1)} fill={barColor} cornerRadius={3} />
+      {!!c.ac && !dead && (
+        <Group y={r * 0.58} listening={false}>
+          <Line points={[-acR, -acR * 0.9, acR, -acR * 0.9, acR, -acR * 0.1, 0, acR, -acR, -acR * 0.1]} closed fill="#1e293b" stroke="#e2e8f0" strokeWidth={1.5} />
+          <Text text={String(c.ac)} fontSize={acR * 1.05} fill="#fff" fontStyle="bold" width={acR * 3} x={-acR * 1.5} y={-acR * 0.62} align="center" />
+        </Group>
+      )}
+      {c.maxHp > 0 && !down && (
+        <Group y={below} listening={false}>
+          <Rect x={-r} width={r * 2} height={barH} fill="#111" cornerRadius={3} stroke="#000" strokeWidth={1} />
+          <Rect x={-r} width={r * 2 * frac} height={barH} fill={barColor} cornerRadius={3} />
           {c.tempHp > 0 && <Rect x={-r} y={-3} width={r * 2 * Math.min(1, c.tempHp / c.maxHp)} height={3} fill="#38bdf8" />}
         </Group>
       )}
-      {conds.map((id, i) => {
-        const cd = COND[id];
-        const a = -Math.PI / 2 - 0.9 + i * 0.36;
-        const cr = Math.max(8, g * 0.14);
+      {dying && (
+        <Group y={below + 6} listening={false}>
+          <Rect x={-Math.max(r, 40)} y={-8} width={Math.max(r, 40) * 2} height={16} fill="rgba(0,0,0,.75)" cornerRadius={8} />
+          {[0, 1, 2].map(i => <Circle key={'s' + i} x={-34 + i * 11} radius={4.5} fill={i < ds.success ? '#22c55e' : 'transparent'} stroke="#22c55e" strokeWidth={1.5} />)}
+          {[0, 1, 2].map(i => <Circle key={'f' + i} x={12 + i * 11} radius={4.5} fill={i < ds.fail ? '#ef4444' : 'transparent'} stroke="#ef4444" strokeWidth={1.5} />)}
+        </Group>
+      )}
+      {ring.map((it, i) => {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / ring.length;
         return (
-          <Group key={id} x={Math.cos(a) * r} y={Math.sin(a) * r} listening={false}>
-            <Circle radius={cr} fill={cd?.color ?? '#555'} stroke="#fff" strokeWidth={1.5} />
-            <Text text={cd?.short ?? id.slice(0, 2)} fontSize={cr * 1.05} fill="#fff" fontStyle="bold" width={cr * 2} x={-cr} y={-cr * 0.55} align="center" />
+          <Group key={it.key} x={Math.cos(a) * R} y={Math.sin(a) * R} listening={false}>
+            <Circle radius={cr} fill={it.color} stroke="#fff" strokeWidth={1.5} />
+            <Text text={it.text} fontSize={cr * (it.text.length > 1 ? 1.0 : 1.2)} fill="#fff" fontStyle="bold" width={cr * 2} x={-cr} y={-cr * 0.5} align="center" />
           </Group>
         );
       })}
-      {c.concentrating && (
-        <Group x={r * 0.75} y={-r * 0.75} listening={false}>
-          <Circle radius={Math.max(9, g * 0.15)} fill="#7c3aed" stroke="#fff" strokeWidth={1.5} />
-          <Text text="C" fontSize={Math.max(10, g * 0.17)} fill="#fff" fontStyle="bold" width={40} x={-20} y={-Math.max(10, g * 0.17) / 2} align="center" />
-        </Group>
-      )}
       {props.showName && (
-        <Group y={r + Math.max(10, g * 0.14)} listening={false}>
+        <Group y={below + (dying ? 18 : c.maxHp > 0 ? barH + 3 : 0)} listening={false}>
           <Text text={t.name} fontSize={Math.max(11, g * 0.2)} fill="#fff" stroke="#000" strokeWidth={0.6} fontStyle="bold" width={g * 4} x={-g * 2} align="center" shadowColor="#000" shadowBlur={4} />
         </Group>
       )}

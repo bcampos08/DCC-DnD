@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUI, setTrayRolls } from '../ui';
 import { useCampaign } from '../store';
 import { roll } from '../lib/roll';
@@ -10,7 +10,11 @@ const DICE = [4, 6, 8, 10, 12, 20, 100];
 export default function DiceTray() {
   const { rollHidden, adv, set, trayRolls } = useUI();
   const rolls = useCampaign(s => s.rolls);
-  const recent = rolls.slice(0, trayRolls);
+  const [clearedAt, setClearedAt] = useState(0);
+  // Oldest first, so the newest roll sits at the bottom next to the dice buttons.
+  const recent = rolls.filter(r => r.at > clearedAt).slice(0, trayRolls).reverse();
+  const list = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (list.current) list.current.scrollTop = list.current.scrollHeight; }, [recent[recent.length - 1]?.id, trayRolls]);
   const [expr, setExpr] = useState('');
   const [open, setOpen] = useState(true);
   const go = () => {
@@ -25,13 +29,14 @@ export default function DiceTray() {
       </div>
       {open && (
         <>
-          {recent.length > 0 && <div className="tray-rolls">{recent.map(r => <RollCard key={r.id} r={r} />)}</div>}
+          {recent.length > 0 && <div className="tray-rolls" ref={list}>{recent.map(r => <RollCard key={r.id} r={r} />)}</div>}
           {/* Sits under the rolls: the tray is pinned to the bottom, so this stays put as the list grows. */}
           <div className="tray-count" title="How many recent rolls to show here">
             Rolls shown
             <button className="icon-btn" onClick={() => setTrayRolls(trayRolls - 1)} disabled={trayRolls <= 0} aria-label="Show fewer rolls">−</button>
             <b>{trayRolls}</b>
             <button className="icon-btn" onClick={() => setTrayRolls(trayRolls + 1)} disabled={trayRolls >= 20} aria-label="Show more rolls">+</button>
+            <button className="btn sm ghost" disabled={!recent.length} onClick={() => setClearedAt(Date.now())} title="Clear the rolls shown here. The Log tab keeps the full history.">Clear</button>
           </div>
           <div className="dice-row">
             {DICE.map(d => <button key={d} className="die" onClick={() => roll(`1d${d}`, `d${d}`, 'DM')}>d{d}</button>)}

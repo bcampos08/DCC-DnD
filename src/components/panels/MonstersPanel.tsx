@@ -31,6 +31,11 @@ export default function MonstersPanel() {
       .sort((a, b) => Number(!!b.custom) - Number(!!a.custom) || a.name.localeCompare(b.name));
   }, [all, q, type, crMin, crMax]);
   const m = monsterId ? all.find(x => x.id === monsterId) : undefined;
+  // When one copy of this monster is selected on the map, rolls are logged under its name (e.g. "Goblin 2").
+  const selected = useUI(s => s.selected);
+  const sceneTokens = useCampaign(s => s.scenes.find(x => x.id === s.activeSceneId)?.tokens);
+  const selTok = selected.length === 1 ? sceneTokens?.find(t => t.id === selected[0]) : undefined;
+  const who = m && selTok?.monsterId === m.id ? selTok.name : m?.name;
 
   if (m) {
     return (
@@ -50,7 +55,8 @@ export default function MonstersPanel() {
           <button className="btn primary" onClick={() => { addMonsters(m, count, { hidden, rollHp }); useUI.getState().toast(`Added ${count} ${m.name}${count > 1 ? 's' : ''} to the map`); }}>Add to map</button>
         </div>
         <div className="pad-x"><MonsterNotes monsterId={m.id} /></div>
-        <StatBlock m={m} />
+        {who !== m.name && <p className="hint pad-x rolling-as">Rolls are logged as <b>{who}</b>.</p>}
+        <StatBlock m={m} who={who} />
         {editing && <MonsterEditor initial={editing} onClose={() => setEditing(null)} />}
       </div>
     );

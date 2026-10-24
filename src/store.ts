@@ -106,7 +106,7 @@ export const campaignData = (): Campaign => {
 export function creatureOf(t: Token, chars: Character[]) {
   if (t.charId) {
     const c = chars.find(c => c.id === t.charId);
-    if (c) return { name: c.name, hp: c.hp, maxHp: c.maxHp, tempHp: c.tempHp, ac: c.ac, conditions: c.conditions, concentrating: !!c.concentrating, portrait: c.portrait };
+    if (c) return { name: c.name, hp: c.hp, maxHp: c.maxHp, tempHp: c.tempHp, ac: c.ac, conditions: c.conditions, concentrating: !!c.concentrating, portrait: c.portrait, deathSaves: c.deathSaves, speed: c.speed };
   }
-  return { name: t.name, hp: t.hp, maxHp: t.maxHp, tempHp: t.tempHp, ac: t.ac, conditions: t.conditions, concentrating: !!t.concentrating, portrait: undefined as string | undefined };
+  return { name: t.name, hp: t.hp, maxHp: t.maxHp, tempHp: t.tempHp, ac: t.ac, conditions: t.conditions, concentrating: !!t.concentrating, portrait: undefined as string | undefined, deathSaves: undefined as Character['deathSaves'], speed: undefined as string | undefined };
 }
