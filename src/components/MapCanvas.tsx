@@ -42,6 +42,7 @@ interface Props {
   onPing?: (x: number, y: number) => void;
   onTokenDblClick?: (id: string) => void;
   onAskText?: (x: number, y: number) => void;
+  vision?: { x: number; y: number; r: number }[] | null; // dark scenes: current sight circles
 }
 
 type Draft =
@@ -311,6 +312,12 @@ export default function MapCanvas(p: Props) {
         })}
       </Layer>
 
+      {scene.fog.enabled && p.vision && (
+        // Explored but not currently seen: dimmed. Clear only inside current sight or areas the DM revealed by hand.
+        <Layer listening={false} opacity={dm ? 0.3 : 0.62}>
+          <FogShape ops={scene.fog.ops.filter(o => !o.auto)} cut={p.vision} />
+        </Layer>
+      )}
       {scene.fog.enabled && (
         <Layer listening={false} opacity={dm ? 0.5 : 1}>
           <FogShape ops={draft?.k === 'brush' ? [...scene.fog.ops, { t: 'brush', mode: draft.mode, r: (p.drawStyle?.brush ?? 1.5) * g.size, pts: draft.pts }] : scene.fog.ops} />
@@ -437,7 +444,7 @@ function TokenNode(props: {
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
 
 // ---------- fog ----------
-function FogShape({ ops }: { ops: FogOp[] }) {
+function FogShape({ ops, cut }: { ops: FogOp[]; cut?: { x: number; y: number; r: number }[] }) {
   return (
     <Shape
       sceneFunc={ctx => {
@@ -457,6 +464,10 @@ function FogShape({ ops }: { ops: FogOp[] }) {
             for (let i = 2; i < op.pts.length; i += 2) c.lineTo(op.pts[i], op.pts[i + 1]);
             c.stroke();
           }
+        }
+        if (cut?.length) {
+          c.globalCompositeOperation = 'destination-out';
+          for (const v of cut) { c.beginPath(); c.arc(v.x, v.y, v.r, 0, Math.PI * 2); c.fill(); }
         }
         c.restore();
       }}

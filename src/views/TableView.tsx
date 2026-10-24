@@ -84,7 +84,7 @@ export default function TableView() {
     <div className={'table' + (idle ? ' idle' : '')}>
       <MapCanvas mode="table" scene={state.scene} width={size.w} height={size.h} camera={camera} onCamera={setCamera}
         creature={creature} activeTokenIds={activeIds} showNames={t => t.kind === 'pc' || state.showMonsterNames}
-        measure={measure} pings={pings} />
+        measure={measure} pings={pings} vision={state.vision} />
       {enc.active && (
         <div className="turn-strip">
           <span className="round">Round {enc.round}</span>

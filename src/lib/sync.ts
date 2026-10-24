@@ -1,4 +1,5 @@
 import { isDefeatedIn } from './defeat';
+import { seenNow, tracksVision, visionCircles, type Circle } from './vision';
 import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scene } from '../types';
 
 // The table window runs on the same computer (dragged onto the TV), so the DM window
@@ -16,6 +17,7 @@ export interface TableState {
   showMonsterNames: boolean;
   camera: { cx: number; cy: number; viewW: number } | null;
   cameraNonce: number;
+  vision: Circle[] | null; // dark scenes: what players can see right now
 }
 export type Msg =
   | { type: 'hello' }
@@ -32,10 +34,12 @@ export const send = (m: Msg) => channel?.postMessage(m);
 export function tableState(c: Campaign, cameraNonce: number, camera: TableState['camera']): TableState {
   const sc = c.scenes.find(s => s.id === c.tableSceneId) ?? null;
   let scene: Scene | null = null;
+  const vision = sc && tracksVision(sc) ? visionCircles(sc, c.characters) : null;
   if (sc) {
     scene = {
       ...sc,
-      tokens: sc.tokens.filter(t => !t.hidden).map(({ note: _note, ...t }) => (t.kind === 'pc' ? t : { ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 })),
+      // In dark scenes, enemies outside everyone's current sight aren't sent to the table.
+      tokens: sc.tokens.filter(t => !t.hidden && (!vision || t.kind === 'pc' || seenNow(sc, vision, t.x, t.y))).map(({ note: _note, ...t }) => (t.kind === 'pc' ? t : { ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 })),
       drawings: sc.drawings.filter(d => !d.dmOnly),
     };
   }
@@ -46,7 +50,7 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     chars: c.characters.map(({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves }) => ({ id, name, portrait, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves })),
     encounter: { ...c.encounter, entries, turn: c.encounter.entries[c.encounter.turn] ? entries.indexOf(c.encounter.entries[c.encounter.turn]) : -1 },
     showMonsterNames: c.settings.showMonsterNames,
-    camera, cameraNonce,
+    camera, cameraNonce, vision,
   };
 }
 export type { Camera };

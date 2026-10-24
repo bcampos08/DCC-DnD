@@ -75,7 +75,7 @@ export default function ScenesPanel() {
           <label className="row gap">Lighting
             <select value={scene.fog.light ?? 'lit'} onChange={e => st.updateScene(activeId, s => { s.fog.light = e.target.value as 'lit' | 'dark'; }, false)}>
               <option value="lit">Lit: everyone sees</option>
-              <option value="dark">Dark: darkvision and carried light only</option>
+              <option value="dark">Dark: darkvision and carried light only (explored areas stay dimmed)</option>
             </select>
           </label>
           {(scene.fog.light ?? 'lit') === 'lit' && (

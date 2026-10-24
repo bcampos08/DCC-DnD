@@ -94,10 +94,11 @@ export interface Token {
   light?: number; // feet of light this token carries (torch 40, lantern 60)
 }
 
+// auto: cleared by a player token moving (counts as "explored"); otherwise drawn by the DM.
 export type FogOp =
-  | { t: 'rect'; mode: 'reveal' | 'hide'; x: number; y: number; w: number; h: number }
-  | { t: 'brush'; mode: 'reveal' | 'hide'; r: number; pts: number[] }
-  | { t: 'all'; mode: 'reveal' | 'hide' };
+  | { t: 'rect'; mode: 'reveal' | 'hide'; x: number; y: number; w: number; h: number; auto?: boolean }
+  | { t: 'brush'; mode: 'reveal' | 'hide'; r: number; pts: number[]; auto?: boolean }
+  | { t: 'all'; mode: 'reveal' | 'hide'; auto?: boolean };
 
 export type Drawing =
   | { id: string; t: 'pen'; pts: number[]; color: string; width: number; dmOnly?: boolean }

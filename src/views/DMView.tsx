@@ -16,7 +16,7 @@ import { useUI, type Tab } from '../ui';
 import { channel, send, tableState, type Measure, type Ping } from '../lib/sync';
 import { uid } from '../lib/id';
 import type { Camera, Scene, Token } from '../types';
-import { revealOp } from '../lib/vision';
+import { revealOp, tracksVision, visionCircles } from '../lib/vision';
 import { loadSrd } from '../lib/monsters';
 import CloudModal from '../components/CloudModal';
 import { cloudInfo, currentUser, isDirty, lastCloudSave, loadFromCloud, onDirtyChange } from '../lib/cloud';
@@ -149,7 +149,7 @@ export default function DMView() {
           <MapCanvas
             mode="dm" scene={scene} width={size.w} height={size.h} camera={camera} onCamera={setCamera}
             creature={t => creatureOf(t, st.characters)} activeTokenIds={activeIds} showNames={() => true}
-            measure={measure} pings={pings} tool={ui.tool} selected={ui.selected} selectedTemplate={ui.selectedTemplate}
+            measure={measure} pings={pings} vision={tracksVision(scene) ? visionCircles(scene, st.characters) : null} tool={ui.tool} selected={ui.selected} selectedTemplate={ui.selectedTemplate}
             diagonal={st.settings.diagonal} drawStyle={drawStyle}
             onSelect={(ids, add) => ui.set(s => ({ selected: add ? [...new Set([...s.selected, ...ids])] : ids, selectedTemplate: null }))}
             onSelectTemplate={id => ui.set({ selectedTemplate: id })}
