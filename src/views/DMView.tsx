@@ -15,10 +15,11 @@ import { useCampaign, creatureOf, campaignData } from '../store';
 import { useUI, type Tab } from '../ui';
 import { channel, send, tableState, type Measure, type Ping } from '../lib/sync';
 import { uid } from '../lib/id';
-import type { Camera, Scene, Token } from '../types';
+import type { Camera, Scene, SceneFolder, Token } from '../types';
 import { playersCanSee, revealOp, tracksVision, visionCircles } from '../lib/vision';
 import { loadSrd } from '../lib/monsters';
 import CloudModal from '../components/CloudModal';
+import { folderPath } from '../components/SceneTree';
 import { cloudInfo, currentUser, isDirty, lastCloudSave, loadFromCloud, onDirtyChange } from '../lib/cloud';
 import { nextTurn } from '../lib/actions';
 
@@ -147,7 +148,10 @@ export default function DMView() {
       <header className="topbar">
         <div className="brand">DCC <span>Table</span></div>
         <select className="scene-select" value={scene.id} onChange={e => st.set(d => { d.activeSceneId = e.target.value; })} aria-label="Scene you are editing">
-          {st.scenes.map(s => <option key={s.id} value={s.id}>{s.name}{s.id === st.tableSceneId ? ' 📺' : ''}</option>)}
+          {sceneGroups(st.scenes, st.sceneFolders).map(([path, list]) => {
+            const opts = list.map(s => <option key={s.id} value={s.id}>{s.name}{s.id === st.tableSceneId ? ' 📺' : ''}</option>);
+            return path ? <optgroup key={path} label={path}>{opts}</optgroup> : opts;
+          })}
         </select>
         {scene.id !== st.tableSceneId
           ? <button className="btn sm warn" onClick={() => st.set(d => { d.tableSceneId = scene.id; })}>Players see “{st.scenes.find(s => s.id === st.tableSceneId)?.name}” — show this scene</button>
@@ -221,4 +225,15 @@ export default function DMView() {
       </div>
     </div>
   );
+}
+
+// Scenes grouped by folder path for the top-bar picker; top-level scenes first.
+function sceneGroups(scenes: Scene[], folders: SceneFolder[]): [string, Scene[]][] {
+  const groups = new Map<string, Scene[]>();
+  for (const s of scenes) {
+    const path = folderPath(folders, s.folderId);
+    groups.set(path, [...(groups.get(path) ?? []), s]);
+  }
+  const byName = (a: Scene, b: Scene) => a.name.localeCompare(b.name, undefined, { numeric: true });
+  return [...groups.entries()].map(([k, v]) => [k, v.sort(byName)] as [string, Scene[]]).sort((a, b) => (a[0] === '' ? -1 : b[0] === '' ? 1 : a[0].localeCompare(b[0])));
 }

@@ -135,6 +135,6 @@ useCampaign.subscribe((s, prev) => {
   if (!useCampaign.persist.hasHydrated()) return; // loading saved data on startup
   if (suspended) return;
   // Roll log entries alone don't count as unsaved work.
-  if (s.scenes === prev.scenes && s.characters === prev.characters && s.partyLoot === prev.partyLoot && s.customMonsters === prev.customMonsters && s.encounter === prev.encounter && s.settings === prev.settings && s.name === prev.name && s.notes === prev.notes && s.monsterNotes === prev.monsterNotes) return;
+  if (s.scenes === prev.scenes && s.characters === prev.characters && s.partyLoot === prev.partyLoot && s.customMonsters === prev.customMonsters && s.encounter === prev.encounter && s.settings === prev.settings && s.name === prev.name && s.notes === prev.notes && s.monsterNotes === prev.monsterNotes && s.sceneFolders === prev.sceneFolders) return;
   if (!dirty) setDirty(true);
 });

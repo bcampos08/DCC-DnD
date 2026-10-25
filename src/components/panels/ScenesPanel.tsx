@@ -6,6 +6,7 @@ import { prepareImage, saveAsset } from '../../lib/assets';
 import { exportBackup, importBackup } from '../../lib/backup';
 import { uid } from '../../lib/id';
 import Modal from '../Modal';
+import SceneTree, { folderPath } from '../SceneTree';
 import type { Grid } from '../../types';
 
 export default function ScenesPanel() {
@@ -17,6 +18,7 @@ export default function ScenesPanel() {
   const st = useCampaign.getState();
   const scene = scenes.find(s => s.id === activeId)!;
   const [adding, setAdding] = useState(false);
+  const [newIn, setNewIn] = useState<string | undefined>(undefined);
   const restore = useRef<HTMLInputElement>(null);
 
   const grid = (p: Partial<Grid>) => st.updateScene(activeId, s => { Object.assign(s.grid, p); }, false);
@@ -24,29 +26,8 @@ export default function ScenesPanel() {
 
   return (
     <div className="panel-scroll pad">
-      <div className="row gap"><h3 className="h grow">Scenes</h3><button className="btn sm primary" onClick={() => setAdding(true)}>+ New scene</button></div>
-      <ul className="scene-list">
-        {scenes.map(s => (
-          <li key={s.id} className={s.id === activeId ? 'on' : ''}>
-            <button className="grow scene-pick" onClick={() => select(s.id)}>
-              <b>{s.name}</b>
-              <small>{s.tokens.length} tokens{s.fog.enabled ? ' · fog' : ''}</small>
-            </button>
-            {s.id === tableId ? <span className="tag live" title="Showing on the table screen">📺 On table</span>
-              : <button className="btn sm" onClick={() => st.set(d => { d.tableSceneId = s.id; })}>Show on table</button>}
-            <button className="icon-btn" title="Rename" onClick={() => { const n = prompt('Scene name', s.name); if (n) st.updateScene(s.id, x => { x.name = n; }, false); }}>✎</button>
-            <button className="icon-btn" title="Duplicate" onClick={() => st.set(d => { const i = d.scenes.findIndex(x => x.id === s.id); d.scenes.splice(i + 1, 0, { ...structuredClone(s), id: uid(), name: s.name + ' copy' }); })}>⧉</button>
-            <button className="icon-btn" title="Delete" disabled={scenes.length < 2} onClick={() => {
-              if (!confirm(`Delete scene “${s.name}”?`)) return;
-              st.set(d => {
-                d.scenes = d.scenes.filter(x => x.id !== s.id);
-                if (d.activeSceneId === s.id) d.activeSceneId = d.scenes[0].id;
-                if (d.tableSceneId === s.id) d.tableSceneId = d.scenes[0].id;
-              });
-            }}>🗑</button>
-          </li>
-        ))}
-      </ul>
+      <div className="row gap"><h3 className="h grow">Scenes</h3><button className="btn sm primary" onClick={() => { setNewIn(scene.folderId); setAdding(true); }}>+ New scene</button></div>
+      <SceneTree onNewScene={f => { setNewIn(f); setAdding(true); }} />
 
       <h3 className="h">Grid — {scene.name}</h3>
       <div className="row gap wrap">
@@ -106,16 +87,19 @@ export default function ScenesPanel() {
         if (!f || !confirm('Restoring replaces everything currently in the app. Continue?')) return;
         try { await importBackup(f); useUI.getState().toast('Backup restored'); } catch (err) { alert((err as Error).message); }
       }} />
-      {adding && <NewScene onClose={() => setAdding(false)} />}
+      {adding && <NewScene folderId={newIn} onClose={() => setAdding(false)} />}
     </div>
   );
 }
 
-function NewScene({ onClose }: { onClose: () => void }) {
+function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: string }) {
+  const folders = useCampaign(s => s.sceneFolders);
+  const [folder, setFolder] = useState(folderId ?? '');
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
   const add = (s: ReturnType<typeof newScene>) => {
+    s.folderId = folder || undefined;
     useCampaign.getState().set(d => { d.scenes.push(s); d.activeSceneId = s.id; });
     useUI.getState().set({ selected: [] });
     onClose();
@@ -134,6 +118,12 @@ function NewScene({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="New scene" onClose={onClose}>
       <label className="field">Scene name (optional)<input value={name} onChange={e => setName(e.target.value)} /></label>
+      <label className="field">Folder
+        <select value={folder} onChange={e => setFolder(e.target.value)}>
+          <option value="">(Top level)</option>
+          {folders.map(f => ({ f, path: folderPath(folders, f.id) })).sort((a, b) => a.path.localeCompare(b.path)).map(({ f, path }) => <option key={f.id} value={f.id}>{path}</option>)}
+        </select>
+      </label>
       <button className="btn primary big" disabled={busy} onClick={() => file.current?.click()}>{busy ? 'Loading…' : 'Upload a map image'}</button>
       <input ref={file} type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} />
       <p className="hint">Or start from a built-in map:</p>

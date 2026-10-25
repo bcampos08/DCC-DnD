@@ -134,6 +134,7 @@ export interface Camera { x: number; y: number; scale: number }
 export interface Scene {
   id: string;
   name: string;
+  folderId?: string; // scene folder it lives in; none = top level
   map?: { src: string; width: number; height: number }; // src: asset id ("asset:...") or URL
   grid: Grid;
   tokens: Token[];
@@ -192,6 +193,7 @@ export interface Campaign {
   customMonsters: Monster[];
   settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number };
   monsterNotes: Record<string, string>; // by monster id, shared by every copy
+  sceneFolders: SceneFolder[];
   notes: Note[];
 }
 
@@ -228,3 +230,5 @@ export interface DdbSheet {
 }
 
 export interface Note { id: string; title: string; body: string; sceneId?: string; updatedAt: number }
+
+export interface SceneFolder { id: string; name: string; parentId?: string; collapsed?: boolean }
