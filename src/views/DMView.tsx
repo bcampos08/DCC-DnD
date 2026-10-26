@@ -3,6 +3,7 @@ import MapCanvas from '../components/MapCanvas';
 import Toolbar, { TOOL_KEYS } from '../components/Toolbar';
 import DiceTray from '../components/DiceTray';
 import TokenCard from '../components/TokenCard';
+import TemplateCard from '../components/TemplateCard';
 import Toasts from '../components/Toasts';
 import CombatPanel from '../components/panels/CombatPanel';
 import MonstersPanel from '../components/panels/MonstersPanel';
@@ -112,7 +113,10 @@ export default function DMView() {
       if ((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]')) return;
       const u = useUI.getState(), c = useCampaign.getState();
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); c.undo(); return; }
-      if (e.key === 'Escape') { u.set({ tool: 'select', selected: [], selectedTemplate: null }); return; }
+      if (e.key === 'Escape') {
+        if (u.targeting) { const t = u.targeting; u.set({ targeting: null }); t.onCancel?.(); return; }
+        u.set({ tool: 'select', selected: [], selectedTemplate: null }); return;
+      }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (u.selectedTemplate) { c.updateScene(c.activeSceneId, s => { s.templates = s.templates.filter(t => t.id !== u.selectedTemplate); }); u.set({ selectedTemplate: null }); }
         else if (u.selected.length) { c.updateScene(c.activeSceneId, s => { s.tokens = s.tokens.filter(t => !u.selected.includes(t.id)); }); u.set({ selected: [] }); }
@@ -160,6 +164,10 @@ export default function DMView() {
         <label className="check" title="Fog of war on this scene"><input type="checkbox" checked={scene.fog.enabled} onChange={e => upd(s => { s.fog.enabled = e.target.checked; })} /> Fog</label>
         <button className="btn sm" onClick={sendView} title="Make the table screen show what you see now">Send my view to table</button>
         <button className="btn sm" onClick={fitTable} title="Fit the whole map on the table screen">Fit table</button>
+        <button className={'btn sm fx-toggle' + (st.settings.fx !== false ? ' on' : '')} onClick={() => st.set(d => { d.settings.fx = d.settings.fx === false; })}
+          title={st.settings.fx !== false ? 'Attack animations on the table screen are ON. Click to turn off (e.g. for big fights).' : 'Attack animations are OFF. Click to turn on.'}>
+          🎬 {st.settings.fx !== false ? 'FX on' : 'FX off'}
+        </button>
         <button className={'btn sm cloud-btn' + (dirty ? ' dirty' : '')} onClick={() => setCloudOpen(true)} title={dirty ? 'Changes on this computer are not saved to the cloud yet' : 'Cloud save'}>{dirty && <i className="dot" />}☁ Cloud</button>
         <button className={'btn sm' + (tableOpen ? '' : ' primary')} onClick={openTable}>{tableOpen ? '📺 Table open' : '📺 Open table view'}</button>
       </header>
@@ -169,6 +177,7 @@ export default function DMView() {
           <MapCanvas
             mode="dm" scene={scene} width={size.w} height={size.h} camera={camera} onCamera={setCamera}
             creature={t => creatureOf(t, st.characters)} activeTokenIds={activeIds} showNames={() => true}
+            targeting={!!ui.targeting} onTarget={pk => ui.targeting?.onPick(pk)}
             measure={measure} pings={pings} vision={vision} playersCanSee={(x, y) => scene.id === st.tableSceneId && playersCanSee(scene, vision, x, y)} tool={ui.tool} selected={ui.selected} selectedTemplate={ui.selectedTemplate}
             diagonal={st.settings.diagonal} drawStyle={drawStyle}
             onSelect={(ids, add) => ui.set(s => ({ selected: add ? [...new Set([...s.selected, ...ids])] : ids, selectedTemplate: null }))}
@@ -201,10 +210,12 @@ export default function DMView() {
             onTokenDblClick={id => { const t = scene.tokens.find(t => t.id === id); if (t?.monsterId) ui.set({ tab: 'monsters', monsterId: t.monsterId }); if (t?.charId) ui.set({ tab: 'party' }); }}
             onAskText={(x, y) => { const text = prompt('Label text'); if (text) upd(s => { s.drawings.push({ id: uid(), t: 'text', x, y, text, color: ui.color, size: Math.max(18, scene.grid.size * 0.4), dmOnly: ui.dmOnlyDraw }); }); }}
           />
+          {ui.targeting && <div className="canvas-hint target">{ui.targeting.hint}</div>}
           {ui.tool === 'grid-align' && <div className="canvas-hint">Drag a box over exactly one square of the map’s printed grid. Esc to cancel.</div>}
           {scene.tokens.length === 0 && ui.tool === 'select' && <div className="canvas-hint soft">Add monsters from the 🐉 Monsters tab, or party tokens from 🛡 Party. Scroll to zoom, drag to pan.</div>}
           <DiceTray />
           <TokenCard />
+          <TemplateCard />
           <Toasts />
           {cloudOpen && <CloudModal onClose={() => setCloudOpen(false)} />}
         </div>

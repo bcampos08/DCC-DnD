@@ -4,7 +4,7 @@ import { makeRoll, critDice, type Adv } from './dice';
 import { send } from './sync';
 import type { RollResult } from '../types';
 
-interface Opts { hidden?: boolean; adv?: Adv }
+interface Opts { hidden?: boolean; adv?: Adv; annotate?: (r: RollResult) => void }
 
 function publish(r: RollResult) {
   useCampaign.getState().addRoll(r);
@@ -30,5 +30,6 @@ export function rollAttack(name: string, who: string, toHit: number, dmg: { dice
   const atk = makeRoll(`1d20${toHit >= 0 ? '+' : '-'}${Math.abs(toHit)}`, `${name} attack`, who, hidden, adv);
   const parts = dmg.map(d => makeRoll(atk.crit ? critDice(d.dice) : d.dice, `${d.type || 'damage'}`.toLowerCase(), who, hidden));
   atk.parts = parts;
+  o?.annotate?.(atk);
   return publish(atk);
 }

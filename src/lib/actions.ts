@@ -9,6 +9,7 @@ import { findMonster } from './monsters';
 import { roll } from './roll';
 import { revealOp } from './vision';
 import { isDefeatedIn } from './defeat';
+import { playFx } from './fx/play';
 
 const hashColor = (s: string) => TOKEN_COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % TOKEN_COLORS.length];
 
@@ -125,6 +126,12 @@ export function changeHp(target: { tokenId?: string; charId?: string }, amount: 
       const save = m.saves.find(s => s.ab === 'con')?.bonus ?? modOf(m.abilities.con);
       useUI.getState().toast(`${name} is concentrating — DC ${dc} Con save`, { label: 'Roll save', run: () => { const r = roll(d20Expr(save), `Concentration (DC ${dc})`, name); useUI.getState().toast(r.total >= dc ? `${name} keeps concentration (${r.total})` : `${name} loses concentration (${r.total})`); if (r.total < dc && tokenRef) st.updateToken(tokenRef.scene.id, tokenRef.token.id, { concentrating: false }); } });
     } else useUI.getState().toast(`${name} is concentrating — DC ${dc} Constitution save`);
+  }
+  // Healing sparkles, and a puff of smoke when a monster drops (only for tokens players can see).
+  if (tokenRef ? !tokenRef.token.hidden : true) {
+    const tok = tokenRef?.token ?? st.scene()?.tokens.find(t => t.charId === charId);
+    if (tok && kind === 'heal' && amount > 0) playFx({ kind: 'heal', to: { x: tok.x, y: tok.y }, element: 'radiant' }, tokenRef?.scene.id);
+    if (tok && kind === 'damage' && hp === 0 && max > 0 && !wasDown && !charId) playFx({ kind: 'poof', to: { x: tok.x, y: tok.y }, element: 'physical' }, tokenRef?.scene.id);
   }
   if (kind === 'damage' && hp === 0 && max > 0 && !wasDown) useUI.getState().toast(charId ? `${name} drops to 0 HP and is dying` : `${name} drops to 0 HP`);
 }

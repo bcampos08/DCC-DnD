@@ -416,3 +416,8 @@ h3, h4 { margin: 0; }
 .tree-hint { margin-top: 6px; }
 .pad select { max-width: 100%; }
 .pad .row > label { min-width: 0; max-width: 100%; }
+.canvas-hint.target { background: rgba(127, 29, 29, .92); border-color: #ef4444; color: #fee2e2; }
+.fx-toggle { opacity: .75; }
+.fx-toggle.on { opacity: 1; background: #3b1d6e; border-color: #7c3aed; color: #ede9fe; }
+.template-card { position: absolute; right: 12px; bottom: 12px; width: 300px; background: rgba(31, 27, 22, .97); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); z-index: 6; }
+.fx-picker select { max-width: 100%; }

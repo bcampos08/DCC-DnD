@@ -20,6 +20,10 @@ browser window on the TV shows players the map.
   concentration save reminders, hidden monsters.
 - **Party.** Import characters from D&D Beyond (read-only; the character must be set to Public) or add them by hand.
 - **Loot.** Loot Box Forge is built in: open a box, pick items, send them to the party loot list, show them on the table.
+- **Animations and sound.** With **🎬 FX on**, clicking an attack asks for a target, rolls against its AC and plays a
+  weapon swing, arrow, spell bolt, explosion and so on on the table screen, with generated sound effects. Hidden rolls
+  never animate. In dark scenes effects only show inside the players' sight; fire, lightning, radiant and force light
+  up the dark as they pass. Area templates and the token card can also play effects by hand.
 - **Dice.** Dice tray with advantage/disadvantage and public or hidden (DM only) rolls, plus a roll log.
 
 Everything is saved in the DM's browser (IndexedDB). Use **☁ Cloud** to move a campaign between computers

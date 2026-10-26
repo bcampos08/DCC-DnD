@@ -3,6 +3,7 @@ import Modal from './Modal';
 import DiceText from './DiceText';
 import { useCampaign } from '../store';
 import { roll } from '../lib/roll';
+import { pcAttack } from '../lib/fx/play';
 import { d20Expr, fmtMod, modOf } from '../lib/dice';
 import { ABILITIES } from '../types';
 import type { Character, DdbSheet } from '../types';
@@ -95,7 +96,7 @@ export default function CharacterSheet({ charId, onClose, onEdit }: { charId: st
           {c.attacks?.map(a => (
             <div key={a.name} className="sheet-row">
               <b className="grow">{a.name}</b>
-              {a.toHit != null && <button className="roll-chip" onClick={() => roll(d20Expr(a.toHit!), `${a.name} attack`, who)}>{fmtMod(a.toHit)} to hit</button>}
+              {a.toHit != null && <button className="roll-chip" title="Roll attack and damage (with animations on, click the target next)" onClick={() => pcAttack(c, a)}>⚔ {fmtMod(a.toHit)} to hit</button>}
               {a.damage && <button className="roll-chip" onClick={() => roll(a.damage!, `${a.name} damage`, who)}>{a.damage}</button>}
               <small className="muted">{a.notes}</small>
             </div>

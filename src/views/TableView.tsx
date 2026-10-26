@@ -4,6 +4,7 @@ import RollCard from '../components/RollCard';
 import { channel, send, type LootReveal, type Measure, type Msg, type Ping, type Reveal, type TableState } from '../lib/sync';
 import type { Camera, Token } from '../types';
 import { fitCamera } from './DMView';
+import type { FxEvent } from '../lib/fx/core';
 import { COND } from '../lib/rules';
 import { RNAME } from '../loot/engine';
 
@@ -13,6 +14,7 @@ export default function TableView() {
   const [measure, setMeasure] = useState<Measure | null>(null);
   const [pings, setPings] = useState<Ping[]>([]);
   const [popups, setPopups] = useState<(Reveal | LootReveal)[]>([]);
+  const [fx, setFx] = useState<FxEvent[]>([]);
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [camera, setCamera] = useState<Camera | null>(null);
   const lastNonce = useRef(-1);
@@ -25,6 +27,7 @@ export default function TableView() {
       const m = e.data;
       if (m.type === 'state') setState(m.state);
       if (m.type === 'measure') setMeasure(m.m);
+      if (m.type === 'fx') setFx(list => [...list.slice(-30), m.fx]);
       if (m.type === 'ping') setPings(ps => [...ps.filter(p => Date.now() - p.at < 2500), m.p]);
       if (m.type === 'popup') {
         setPopups(ps => [...ps.slice(-3), m.p]);
@@ -84,7 +87,8 @@ export default function TableView() {
     <div className={'table' + (idle ? ' idle' : '')}>
       <MapCanvas mode="table" scene={state.scene} width={size.w} height={size.h} camera={camera} onCamera={setCamera}
         creature={creature} activeTokenIds={activeIds} showNames={t => t.kind === 'pc' || state.showMonsterNames}
-        measure={measure} pings={pings} vision={state.vision} />
+        measure={measure} pings={pings} vision={state.vision}
+        fx={fx.filter(f => f.sceneId === state.scene!.id)} onFxDone={id => setFx(list => list.filter(f => f.id !== id))} />
       {enc.active && (
         <div className="turn-strip">
           <span className="round">Round {enc.round}</span>

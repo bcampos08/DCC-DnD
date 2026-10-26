@@ -5,6 +5,7 @@ import HpControl, { HpBar } from './HpControl';
 import Conditions from './Conditions';
 import MonsterNotes from './MonsterNotes';
 import DeathSaves from './DeathSaves';
+import FxPicker from './FxPicker';
 import { findMonster } from '../lib/monsters';
 import { LIGHTS } from '../lib/vision';
 import { saveAsset } from '../lib/assets';
@@ -77,6 +78,7 @@ export default function TokenCard() {
         </div>
       )}
       <MonsterNotes monsterId={t.monsterId} token={{ sceneId, id: t.id, note: t.note }} />
+      <FxPicker tokenId={t.id} />
       <label className="check"><input type="checkbox" checked={c.concentrating} onChange={e => setConc(e.target.checked)} /> Concentrating</label>
       <details className="tc-more" open={c.conditions.length > 0}>
         <summary>Conditions{c.conditions.length ? ` (${c.conditions.length})` : ''}</summary>

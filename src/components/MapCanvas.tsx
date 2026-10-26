@@ -7,6 +7,9 @@ import { COND } from '../lib/rules';
 import { cubeRect, gridFeet, snapCentre, snapCorner, templateCells, CONE_HALF } from '../lib/geometry';
 import type { Measure, Ping } from '../lib/sync';
 import type { Tool } from '../ui';
+import FxLayer from './FxLayer';
+import type { FxEvent } from '../lib/fx/core';
+import type { Light } from '../lib/fx/draw';
 
 export interface CreatureLook { name: string; hp: number; maxHp: number; tempHp: number; conditions: string[]; concentrating: boolean; portrait?: string; ac?: number; deathSaves?: { success: number; fail: number } }
 
@@ -44,6 +47,11 @@ interface Props {
   onAskText?: (x: number, y: number) => void;
   vision?: { x: number; y: number; r: number }[] | null; // dark scenes: current sight circles
   playersCanSee?: (x: number, y: number) => boolean; // used to keep enemy move arrows off the table
+  // Table: running effects. DM: waiting for a target click.
+  fx?: FxEvent[];
+  onFxDone?: (id: string) => void;
+  targeting?: boolean;
+  onTarget?: (p: { tokenId?: string; x: number; y: number; shift: boolean }) => void;
 }
 
 type Draft =
@@ -70,6 +78,10 @@ export default function MapCanvas(p: Props) {
   const dm = mode === 'dm';
   const tool = p.tool ?? 'select';
   const space = useRef(false);
+  const lightsRef = useRef<Light[]>([]);
+  if (!p.fx?.length) lightsRef.current = []; // no effects running: close any light holes in the fog
+  const fogLayer = useRef<Konva.Layer>(null);
+  const dimLayer = useRef<Konva.Layer>(null);
 
   useEffect(() => {
     const d = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target as HTMLElement).closest('input,textarea')) space.current = e.type === 'keydown'; };
@@ -101,6 +113,10 @@ export default function MapCanvas(p: Props) {
       return;
     }
     const m = toMap();
+    if (p.targeting) {
+      if (onEmpty) p.onTarget?.({ x: m.x, y: m.y, shift });
+      return;
+    }
     if (tool === 'select') {
       if (!onEmpty) return;
       if (shift) setDraft({ k: 'box', x0: m.x, y0: m.y, x1: m.x, y1: m.y });
@@ -275,7 +291,7 @@ export default function MapCanvas(p: Props) {
       onTouchMove={onMove}
       onTouchEnd={onUp}
       onContextMenu={e => e.evt.preventDefault()}
-      style={{ cursor: cursorFor(tool, dm, draft) }}
+      style={{ cursor: cursorFor(tool, dm, draft, p.targeting) }}
     >
       <Layer>
         <Rect name="bg" x={-20000} y={-20000} width={40000} height={40000} fill={mode === 'table' ? '#000' : '#14110f'} />
@@ -313,23 +329,26 @@ export default function MapCanvas(p: Props) {
           const dp = dragPos?.get(t.id);
           return (
             <TokenNode key={t.id} t={t} g={scene.grid.size} c={p.creature(t)} dm={dm} selected={sel.has(t.id)} active={p.activeTokenIds.has(t.id)}
-              showName={p.showNames(t)} draggable={draggingTokens} x={dp?.x ?? t.x} y={dp?.y ?? t.y}
-              onDown={e => { if (dm && tool === 'select') { e.cancelBubble = true; const add = 'shiftKey' in e.evt && e.evt.shiftKey; if (add || !sel.has(t.id)) p.onSelect?.([t.id], add); } }}
+              showName={p.showNames(t)} draggable={draggingTokens && !p.targeting} x={dp?.x ?? t.x} y={dp?.y ?? t.y}
+              onDown={e => { if (p.targeting) { e.cancelBubble = true; p.onTarget?.({ tokenId: t.id, x: t.x, y: t.y, shift: 'shiftKey' in e.evt && e.evt.shiftKey }); return; } if (dm && tool === 'select') { e.cancelBubble = true; const add = 'shiftKey' in e.evt && e.evt.shiftKey; if (add || !sel.has(t.id)) p.onSelect?.([t.id], add); } }}
               onDragStart={() => onTokenDragStart(t)} onDragMove={e => onTokenDragMove(t, e)} onDragEnd={e => onTokenDragEnd(t, e)}
               onDbl={() => p.onTokenDblClick?.(t.id)} />
           );
         })}
       </Layer>
 
+      {!dm && !!p.fx?.length && (
+        <FxLayer fx={p.fx} scene={scene} vision={scene.fog.enabled ? p.vision ?? null : null} lightsRef={lightsRef} fogLayers={[fogLayer, dimLayer]} onDone={id => p.onFxDone?.(id)} />
+      )}
       {scene.fog.enabled && p.vision && (
         // Explored but not currently seen: dimmed. Clear only inside current sight or areas the DM revealed by hand.
-        <Layer listening={false} opacity={dm ? 0.3 : 0.62}>
-          <FogShape ops={scene.fog.ops.filter(o => !o.auto)} cut={p.vision} />
+        <Layer ref={dimLayer} listening={false} opacity={dm ? 0.3 : 0.62}>
+          <FogShape ops={scene.fog.ops.filter(o => !o.auto)} cut={p.vision} lights={lightsRef} />
         </Layer>
       )}
       {scene.fog.enabled && (
-        <Layer listening={false} opacity={dm ? 0.5 : 1}>
-          <FogShape ops={draft?.k === 'brush' ? [...scene.fog.ops, { t: 'brush', mode: draft.mode, r: (p.drawStyle?.brush ?? 1.5) * g.size, pts: draft.pts }] : scene.fog.ops} />
+        <Layer ref={fogLayer} listening={false} opacity={dm ? 0.5 : 1}>
+          <FogShape lights={lightsRef} ops={draft?.k === 'brush' ? [...scene.fog.ops, { t: 'brush', mode: draft.mode, r: (p.drawStyle?.brush ?? 1.5) * g.size, pts: draft.pts }] : scene.fog.ops} />
         </Layer>
       )}
 
@@ -349,8 +368,9 @@ export default function MapCanvas(p: Props) {
 let localN = 0;
 const uidLocal = () => Date.now().toString(36) + (localN++).toString(36);
 
-function cursorFor(tool: Tool, dm: boolean, draft: Draft | null) {
+function cursorFor(tool: Tool, dm: boolean, draft: Draft | null, targeting?: boolean) {
   if (draft?.k === 'pan') return 'grabbing';
+  if (targeting) return 'crosshair';
   if (!dm) return 'grab';
   if (tool === 'select') return 'default';
   if (tool === 'erase') return 'not-allowed';
@@ -453,7 +473,7 @@ function TokenNode(props: {
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
 
 // ---------- fog ----------
-function FogShape({ ops, cut }: { ops: FogOp[]; cut?: { x: number; y: number; r: number }[] }) {
+function FogShape({ ops, cut, lights }: { ops: FogOp[]; cut?: { x: number; y: number; r: number }[]; lights?: React.MutableRefObject<Light[]> }) {
   return (
     <Shape
       sceneFunc={ctx => {
@@ -477,6 +497,16 @@ function FogShape({ ops, cut }: { ops: FogOp[]; cut?: { x: number; y: number; r:
         if (cut?.length) {
           c.globalCompositeOperation = 'destination-out';
           for (const v of cut) { c.beginPath(); c.arc(v.x, v.y, v.r, 0, Math.PI * 2); c.fill(); }
+        }
+        // Light given off by spells in flight: soft-edged holes that close again when they pass.
+        if (lights?.current.length) {
+          c.globalCompositeOperation = 'destination-out';
+          for (const l of lights.current) {
+            if (l.r <= 0) continue;
+            const g = c.createRadialGradient(l.x, l.y, l.r * 0.55, l.x, l.y, l.r);
+            g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+            c.fillStyle = g; c.beginPath(); c.arc(l.x, l.y, l.r, 0, Math.PI * 2); c.fill();
+          }
         }
         c.restore();
       }}

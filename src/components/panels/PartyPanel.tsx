@@ -6,6 +6,7 @@ import { uid } from '../../lib/id';
 import { PC_COLORS } from '../../lib/rules';
 import { addCharacterToken } from '../../lib/actions';
 import { roll } from '../../lib/roll';
+import { pcAttack } from '../../lib/fx/play';
 import { d20Expr, fmtMod, modOf } from '../../lib/dice';
 import HpControl, { HpBar } from '../HpControl';
 import Conditions, { CondChips } from '../Conditions';
@@ -88,7 +89,7 @@ export default function PartyPanel() {
                     <div className="sb-line"><b>Skills</b> {(c.skills ?? []).map(s => <button key={s.name} className="roll-chip sm" onClick={() => roll(d20Expr(s.bonus), s.name, c.name)}>{s.name} {fmtMod(s.bonus)}</button>)}</div>
                   </>
                 )}
-                {!!c.attacks?.length && <div className="sb-line"><b>Attacks</b> {c.attacks.map(a => <span key={a.name} className="atk">{a.name} {a.toHit != null && <button className="roll-chip sm" onClick={() => roll(d20Expr(a.toHit!), `${a.name} attack`, c.name)}>{fmtMod(a.toHit)}</button>} {a.damage && <button className="roll-chip sm" onClick={() => roll(a.damage!, `${a.name} damage`, c.name)}>{a.damage}</button>} <small className="muted">{a.notes}</small></span>)}</div>}
+                {!!c.attacks?.length && <div className="sb-line"><b>Attacks</b> {c.attacks.map(a => <span key={a.name} className="atk">{a.name} {a.toHit != null && <button className="roll-chip sm" title="Roll attack and damage" onClick={() => pcAttack(c, a)}>⚔ {fmtMod(a.toHit)}</button>} {a.damage && <button className="roll-chip sm" onClick={() => roll(a.damage!, `${a.name} damage`, c.name)}>{a.damage}</button>} <small className="muted">{a.notes}</small></span>)}</div>}
                 <div className="row gap wrap">
                   <button className="btn sm" onClick={() => addCharacterToken(c)}>Place token</button>
                   <button className="btn sm" onClick={() => setSheetFor(c.id)}>📜 Full sheet</button>

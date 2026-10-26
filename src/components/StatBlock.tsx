@@ -2,12 +2,13 @@ import type { Monster, MonsterAction } from '../types';
 import { ABILITIES } from '../types';
 import { fmtMod, modOf, d20Expr } from '../lib/dice';
 import { crText } from '../lib/rules';
-import { roll, rollAttack } from '../lib/roll';
+import { roll } from '../lib/roll';
+import { attack } from '../lib/fx/play';
 import DiceText from './DiceText';
 
 const AB_LABEL = { str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA' } as const;
 
-export default function StatBlock({ m, who }: { m: Monster; who?: string }) {
+export default function StatBlock({ m, who, attackerId }: { m: Monster; who?: string; attackerId?: string }) {
   const name = who ?? m.name;
   const Section = ({ title, list }: { title: string; list?: MonsterAction[] }) =>
     list && list.length ? (
@@ -17,7 +18,7 @@ export default function StatBlock({ m, who }: { m: Monster; who?: string }) {
           <div key={i} className="sb-act">
             <b>{a.name}.</b>{' '}
             {a.atk != null && (
-              <button className="roll-chip" title="Roll attack and damage" onClick={() => rollAttack(a.name, name, a.atk!, a.dmg ?? [])}>
+              <button className="roll-chip" title="Roll attack and damage" onClick={() => attack({ name: a.name, who: name, toHit: a.atk!, dmg: a.dmg ?? [], desc: a.desc, monsterId: m.id, attackerId })}>
                 🎲 {fmtMod(a.atk)}{a.dmg?.length ? ` · ${a.dmg.map(d => d.dice).join(' + ')}` : ''}
               </button>
             )}{' '}

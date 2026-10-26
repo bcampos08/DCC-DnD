@@ -56,7 +56,7 @@ export default function MonstersPanel() {
         </div>
         <div className="pad-x"><MonsterNotes monsterId={m.id} /></div>
         {who !== m.name && <p className="hint pad-x rolling-as">Rolls are logged as <b>{who}</b>.</p>}
-        <StatBlock m={m} who={who} />
+        <StatBlock m={m} who={who} attackerId={selTok?.monsterId === m.id ? selTok.id : undefined} />
         {editing && <MonsterEditor initial={editing} onClose={() => setEditing(null)} />}
       </div>
     );

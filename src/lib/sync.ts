@@ -1,4 +1,5 @@
 import { isDefeatedIn } from './defeat';
+import type { FxEvent } from './fx/core';
 import { seenNow, tracksVision, visionCircles, type Circle } from './vision';
 import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scene } from '../types';
 
@@ -25,6 +26,7 @@ export type Msg =
   | { type: 'measure'; m: Measure | null }
   | { type: 'ping'; p: Ping }
   | { type: 'popup'; p: Reveal | LootReveal }
+  | { type: 'fx'; fx: FxEvent }
   | { type: 'bye' };
 
 export const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('dcc-table') : null;

@@ -30,9 +30,18 @@ interface UI {
   cameraNonce: number;
   tableCamera: { cx: number; cy: number; viewW: number } | null;
   trayRolls: number; // how many recent rolls the dice tray shows
+  targeting: Targeting | null; // waiting for the DM to click a target on the map
   toasts: { id: number; text: string; action?: { label: string; run: () => void } }[];
   set: (p: Partial<UI> | ((s: UI) => Partial<UI>)) => void;
   toast: (text: string, action?: { label: string; run: () => void }) => void;
+}
+
+export interface Pick { tokenId?: string; x: number; y: number; shift: boolean }
+export interface Targeting {
+  hint: string;
+  allowPoint: boolean; // can click empty map as well as tokens
+  onPick: (p: Pick) => void;
+  onCancel?: () => void; // Esc
 }
 
 let tid = 1;
@@ -48,7 +57,7 @@ export const useUI = create<UI>()((set, get) => ({
   tool: 'select', selected: [], selectedTemplate: null, tab: 'combat', monsterId: null,
   rollHidden: true, adv: 'normal', camera: {}, viewport: { w: 1, h: 1 },
   color: '#e11d48', strokeWidth: 4, fillShapes: false, dmOnlyDraw: false, brush: 1.5, tplColor: '#f97316',
-  cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(),
+  cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(), targeting: null,
   set: p => set(typeof p === 'function' ? p : () => p),
   toast: (text, action) => {
     const id = tid++;
