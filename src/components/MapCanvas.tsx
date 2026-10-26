@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Transformer } from 'react-konva';
 import { Stage, Layer, Image as KImage, Rect, Shape, Line, Circle, Group, Text, Arrow } from 'react-konva';
 import type Konva from 'konva';
-import type { AreaTemplate, Camera, Drawing, FogOp, Scene, Token } from '../types';
+import type { AreaTemplate, Camera, DrawTf, Drawing, FogOp, Scene, Token } from '../types';
 import { useImage } from '../lib/useImage';
 import { COND } from '../lib/rules';
 import { cubeRect, gridFeet, snapCentre, snapCorner, templateCells, CONE_HALF } from '../lib/geometry';
@@ -40,6 +41,10 @@ interface Props {
   onTemplate?: (t: AreaTemplate) => void;
   onMoveTemplate?: (id: string, x: number, y: number) => void;
   onRemoveTemplate?: (id: string) => void;
+  onUpdateTemplate?: (id: string, patch: Partial<AreaTemplate>, final: boolean) => void;
+  selectedDrawing?: string | null;
+  onSelectDrawing?: (id: string | null) => void;
+  onUpdateDrawing?: (id: string, tf: DrawTf) => void;
   onGridAlign?: (x: number, y: number, w: number, h: number) => void;
   onMeasure?: (m: Measure | null) => void;
   onPing?: (x: number, y: number) => void;
@@ -79,9 +84,11 @@ export default function MapCanvas(p: Props) {
   const tool = p.tool ?? 'select';
   const space = useRef(false);
   const lightsRef = useRef<Light[]>([]);
-  if (!p.fx?.length) lightsRef.current = []; // no effects running: close any light holes in the fog
+  if (!p.fx?.length && !scene.effects?.length) lightsRef.current = []; // nothing running: close any light holes in the fog
   const fogLayer = useRef<Konva.Layer>(null);
   const dimLayer = useRef<Konva.Layer>(null);
+  // Where a shape-tool press started: on a token (and which), and the screen point, to tell clicks from drags.
+  const press = useRef<{ tokenId?: string; sx: number; sy: number } | null>(null);
 
   useEffect(() => {
     const d = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target as HTMLElement).closest('input,textarea')) space.current = e.type === 'keydown'; };
@@ -113,6 +120,10 @@ export default function MapCanvas(p: Props) {
       return;
     }
     const m = toMap();
+    const tokNode = e.target.findAncestor('.token', true) as Konva.Node | undefined;
+    const tokId = tokNode?.id() || undefined;
+    const tokOn = tokId ? scene.tokens.find(t => t.id === tokId) : undefined;
+    press.current = { tokenId: tokId, sx: pos.x, sy: pos.y };
     if (p.targeting) {
       if (onEmpty) p.onTarget?.({ x: m.x, y: m.y, shift });
       return;
@@ -134,7 +145,8 @@ export default function MapCanvas(p: Props) {
     } else if (tool === 'pen') {
       setDraft({ k: 'pen', pts: [m.x, m.y] });
     } else if (tool === 'line' || tool === 'rect' || tool === 'circle') {
-      setDraft({ k: 'shape', t: tool, x0: m.x, y0: m.y, x1: m.x, y1: m.y });
+      const o = tokOn && tool !== 'rect' ? { x: tokOn.x, y: tokOn.y } : m;
+      setDraft({ k: 'shape', t: tool, x0: o.x, y0: o.y, x1: o.x, y1: o.y });
     } else if (tool === 'text') {
       p.onAskText?.(m.x, m.y);
     } else if (tool === 'ping') {
@@ -143,7 +155,9 @@ export default function MapCanvas(p: Props) {
       setDraft({ k: 'align', x0: m.x, y0: m.y, x1: m.x, y1: m.y });
     } else if (tool.startsWith('tpl-')) {
       const shape = tool.slice(4) as AreaTemplate['shape'];
-      const o = shape === 'cone' || shape === 'line' ? (g.snap ? snapCorner(m.x, m.y, g) : m) : g.snap ? snapCorner(m.x, m.y, g) : m;
+      // Spheres and cones start at the centre of a square (or of the token the drag starts on);
+      // lines and cubes start on a grid corner.
+      const o = tokOn ? { x: tokOn.x, y: tokOn.y } : !g.snap ? m : shape === 'circle' || shape === 'cone' ? snapCentre(m.x, m.y, 1, g) : snapCorner(m.x, m.y, g);
       setDraft({ k: 'tpl', t: { id: Math.random().toString(36).slice(2), shape, x: o.x, y: o.y, angle: 0, feet: g.feet, color: p.drawStyle?.tplColor ?? '#f97316' } });
     }
   };
@@ -193,8 +207,15 @@ export default function MapCanvas(p: Props) {
     const d = draft;
     setDraft(null);
     if (!d) return;
+    const pos = stageRef.current?.getPointerPosition();
+    const pr = press.current;
+    const clicked = !!pr && !!pos && Math.hypot(pos.x - pr.sx, pos.y - pr.sy) < 6;
+    if (clicked && (d.k === 'shape' || d.k === 'tpl' || d.k === 'pen')) {
+      if (pr?.tokenId) p.onSelect?.([pr.tokenId], false);
+      return; // a click isn't a shape; drag to make one
+    }
     switch (d.k) {
-      case 'pan': if (!d.moved && dm && tool === 'select') { p.onSelect?.([], false); p.onSelectTemplate?.(null); } return;
+      case 'pan': if (!d.moved && dm && tool === 'select') { p.onSelect?.([], false); p.onSelectTemplate?.(null); p.onSelectDrawing?.(null); } return;
       case 'measure': p.onMeasure?.(null); return;
       case 'box': {
         const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1), w = Math.abs(d.x1 - d.x0), h = Math.abs(d.y1 - d.y0);
@@ -312,10 +333,15 @@ export default function MapCanvas(p: Props) {
       </Layer>
 
       <Layer>
-        {visibleDrawings.map(d => <DrawingNode key={d.id} d={d} erase={dm && tool === 'erase'} onRemove={() => p.onRemoveDrawing?.(d.id)} />)}
+        {visibleDrawings.map(d => (
+          <DrawingNode key={d.id} d={d} erase={dm && tool === 'erase'} selectable={dm && tool === 'select' && !p.targeting} selected={p.selectedDrawing === d.id}
+            onRemove={() => p.onRemoveDrawing?.(d.id)} onSelect={() => p.onSelectDrawing?.(d.id)} onChange={tf => p.onUpdateDrawing?.(d.id, tf)} />
+        ))}
+        {dm && p.selectedDrawing && tool === 'select' && <DrawTransformer id={p.selectedDrawing} />}
         {scene.templates.map(t => (
           <TemplateNode key={t.id} t={t} scene={scene} W={W} H={H} dm={dm} tool={tool} selected={p.selectedTemplate === t.id}
-            onSelect={() => p.onSelectTemplate?.(t.id)} onMove={(x, y) => p.onMoveTemplate?.(t.id, x, y)} onRemove={() => p.onRemoveTemplate?.(t.id)} />
+            onSelect={() => p.onSelectTemplate?.(t.id)} onMove={(x, y) => p.onMoveTemplate?.(t.id, x, y)} onRemove={() => p.onRemoveTemplate?.(t.id)}
+            onUpdate={(patch, final) => p.onUpdateTemplate?.(t.id, patch, final)} />
         ))}
         {draft?.k === 'tpl' && <TemplateNode t={draft.t} scene={scene} W={W} H={H} dm={dm} tool={tool} selected preview />}
         {draft?.k === 'pen' && <Line points={draft.pts} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} lineCap="round" lineJoin="round" tension={0.3} listening={false} />}
@@ -337,8 +363,8 @@ export default function MapCanvas(p: Props) {
         })}
       </Layer>
 
-      {!dm && !!p.fx?.length && (
-        <FxLayer fx={p.fx} scene={scene} vision={scene.fog.enabled ? p.vision ?? null : null} lightsRef={lightsRef} fogLayers={[fogLayer, dimLayer]} onDone={id => p.onFxDone?.(id)} />
+      {(!!p.fx?.length || !!scene.effects?.length) && (
+        <FxLayer fx={p.fx ?? []} scene={scene} vision={!dm && scene.fog.enabled ? p.vision ?? null : null} lightsRef={lightsRef} fogLayers={[fogLayer, dimLayer]} onDone={id => p.onFxDone?.(id)} />
       )}
       {scene.fog.enabled && p.vision && (
         // Explored but not currently seen: dimmed. Clear only inside current sight or areas the DM revealed by hand.
@@ -411,7 +437,7 @@ function TokenNode(props: {
   const acR = Math.max(8, r * 0.3);
 
   return (
-    <Group x={props.x} y={props.y} draggable={props.draggable} opacity={dm && t.hidden ? 0.45 : 1}
+    <Group name="token" id={t.id} x={props.x} y={props.y} draggable={props.draggable} opacity={dm && t.hidden ? 0.45 : 1}
       onMouseDown={props.onDown} onTouchStart={props.onDown} onDragStart={props.onDragStart} onDragMove={props.onDragMove} onDragEnd={props.onDragEnd} onDblClick={props.onDbl} onDblTap={props.onDbl}>
       {props.active && <Circle radius={r + 9} stroke="#fbbf24" strokeWidth={6} shadowColor="#fbbf24" shadowBlur={20} />}
       <Circle radius={r + 2} fill="rgba(0,0,0,.45)" offsetY={-3} />
@@ -515,19 +541,49 @@ function FogShape({ ops, cut, lights }: { ops: FogOp[]; cut?: { x: number; y: nu
 }
 
 // ---------- drawings ----------
-function DrawingNode({ d, erase, onRemove }: { d: Drawing; erase: boolean; onRemove: () => void }) {
-  const common = { onClick: erase ? onRemove : undefined, onTap: erase ? onRemove : undefined, listening: erase, dash: d.dmOnly ? [10, 6] : undefined, hitStrokeWidth: 16 };
-  if (d.t === 'pen') return <Line {...common} points={d.pts} stroke={d.color} strokeWidth={d.width} lineCap="round" lineJoin="round" tension={0.3} />;
-  if (d.t === 'line') return <Line {...common} points={d.pts} stroke={d.color} strokeWidth={d.width} lineCap="round" />;
-  if (d.t === 'rect') return <Rect {...common} x={d.x} y={d.y} width={d.w} height={d.h} stroke={d.color} strokeWidth={d.width} fill={d.fill ? d.color + '55' : undefined} />;
-  if (d.t === 'circle') return <Circle {...common} x={d.x} y={d.y} radius={d.r} stroke={d.color} strokeWidth={d.width} fill={d.fill ? d.color + '55' : undefined} />;
-  return <Text onClick={erase ? onRemove : undefined} listening={erase} x={d.x} y={d.y} text={d.text} fontSize={d.size} fill={d.color} fontStyle="bold" stroke="#000" strokeWidth={d.size / 30} opacity={d.dmOnly ? 0.7 : 1} />;
+const readTf = (n: Konva.Node): DrawTf => ({ x: n.x(), y: n.y(), rot: n.rotation(), sx: n.scaleX(), sy: n.scaleY() });
+
+// A drawing, wrapped so it can be moved, resized and rotated with the select tool.
+function DrawingNode({ d, erase, selectable, selected, onRemove, onSelect, onChange }: {
+  d: Drawing; erase: boolean; selectable: boolean; selected: boolean; onRemove: () => void; onSelect: () => void; onChange: (tf: DrawTf) => void;
+}) {
+  const tf = d.tf ?? { x: 0, y: 0, rot: 0, sx: 1, sy: 1 };
+  const common = { dash: d.dmOnly ? [10, 6] : undefined, hitStrokeWidth: 16, strokeScaleEnabled: false };
+  let shape: React.ReactNode;
+  if (d.t === 'pen') shape = <Line {...common} points={d.pts} stroke={d.color} strokeWidth={d.width} lineCap="round" lineJoin="round" tension={0.3} />;
+  else if (d.t === 'line') shape = <Line {...common} points={d.pts} stroke={d.color} strokeWidth={d.width} lineCap="round" />;
+  else if (d.t === 'rect') shape = <Rect {...common} x={d.x} y={d.y} width={d.w} height={d.h} stroke={d.color} strokeWidth={d.width} fill={d.fill ? d.color + '55' : undefined} />;
+  else if (d.t === 'circle') shape = <Circle {...common} x={d.x} y={d.y} radius={d.r} stroke={d.color} strokeWidth={d.width} fill={d.fill ? d.color + '55' : undefined} />;
+  else shape = <Text x={d.x} y={d.y} text={d.text} fontSize={d.size} fill={d.color} fontStyle="bold" stroke="#000" strokeWidth={d.size / 30} opacity={d.dmOnly ? 0.7 : 1} />;
+  return (
+    <Group id={'draw-' + d.id} x={tf.x} y={tf.y} rotation={tf.rot} scaleX={tf.sx} scaleY={tf.sy}
+      listening={erase || selectable} draggable={selectable}
+      onMouseDown={e => { if (selectable) { e.cancelBubble = true; if (!selected) onSelect(); } }}
+      onClick={() => erase && onRemove()} onTap={() => erase && onRemove()}
+      onDragStart={() => { if (!selected) onSelect(); }}
+      onDragEnd={e => onChange(readTf(e.target))} onTransformEnd={e => onChange(readTf(e.target))}>
+      {shape}
+    </Group>
+  );
+}
+
+function DrawTransformer({ id }: { id: string }) {
+  const tr = useRef<Konva.Transformer>(null);
+  useEffect(() => {
+    const t = tr.current;
+    const n = t?.getStage()?.findOne('#draw-' + id);
+    if (t && n) { t.nodes([n]); t.getLayer()?.batchDraw(); }
+  });
+  return (
+    <Transformer ref={tr} rotateEnabled keepRatio={false} ignoreStroke anchorSize={10} borderStroke="#60a5fa" anchorStroke="#60a5fa" anchorFill="#0f172a"
+      rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]} rotationSnapTolerance={4} />
+  );
 }
 
 // ---------- templates ----------
-function TemplateNode({ t, scene, W, H, dm, tool, selected, preview, onSelect, onMove, onRemove }: {
+function TemplateNode({ t, scene, W, H, dm, tool, selected, preview, onSelect, onMove, onRemove, onUpdate }: {
   t: AreaTemplate; scene: Scene; W: number; H: number; dm: boolean; tool: Tool; selected?: boolean; preview?: boolean;
-  onSelect?: () => void; onMove?: (x: number, y: number) => void; onRemove?: () => void;
+  onSelect?: () => void; onMove?: (x: number, y: number) => void; onRemove?: () => void; onUpdate?: (patch: Partial<AreaTemplate>, final: boolean) => void;
 }) {
   const g = scene.grid;
   const L = (t.feet / g.feet) * g.size;
@@ -545,6 +601,14 @@ function TemplateNode({ t, scene, W, H, dm, tool, selected, preview, onSelect, o
     shape = <Rect x={q.x - t.x} y={q.y - t.y} width={q.w} height={q.h} stroke={t.color} strokeWidth={3} fill={fill} />;
   }
   const canDrag = dm && tool === 'select' && !preview;
+  // Resize/aim handle: the tip of a cone or line, the edge of a sphere, the far corner of a cube.
+  const tip = t.shape === 'cube'
+    ? { x: (Math.cos(t.angle) >= 0 ? 1 : -1) * L, y: (Math.sin(t.angle) >= 0 ? 1 : -1) * L }
+    : { x: Math.cos(t.angle) * L, y: Math.sin(t.angle) * L };
+  const fromHandle = (x: number, y: number): Partial<AreaTemplate> => {
+    const dist = t.shape === 'cube' ? Math.max(Math.abs(x), Math.abs(y)) : Math.hypot(x, y);
+    return { angle: Math.atan2(y, x), feet: Math.max(g.feet, Math.round(dist / g.size) * g.feet) };
+  };
   return (
     <>
       {cells.map(([c, r]) => <Rect key={c + ',' + r} listening={false} x={c * g.size + g.offsetX} y={r * g.size + g.offsetY} width={g.size} height={g.size} fill={t.color} opacity={0.22} />)}
@@ -552,10 +616,16 @@ function TemplateNode({ t, scene, W, H, dm, tool, selected, preview, onSelect, o
         onMouseDown={e => { if (tool === 'select') { e.cancelBubble = true; onSelect?.(); } }}
         onClick={() => tool === 'erase' && onRemove?.()}
         onDblClick={() => onRemove?.()}
-        onDragEnd={e => { const s = g.snap ? snapCorner(e.target.x(), e.target.y(), g) : { x: e.target.x(), y: e.target.y() }; e.target.position({ x: t.x, y: t.y }); onMove?.(s.x, s.y); }}>
+        onDragEnd={e => { if (e.target !== e.currentTarget) return; const x = e.target.x(), y = e.target.y(); e.target.position({ x: t.x, y: t.y }); onMove?.(x, y); }}>
         {shape}
         <Circle radius={6} fill={t.color} stroke={selected ? '#fff' : '#000'} strokeWidth={2} />
         <Text text={`${t.feet} ft`} fontSize={Math.max(14, g.size * 0.28)} fill="#fff" stroke="#000" strokeWidth={0.8} fontStyle="bold" x={10} y={-26} />
+        {selected && canDrag && (
+          <Circle x={tip.x} y={tip.y} radius={Math.max(8, g.size * 0.14)} fill="#0f172a" stroke="#60a5fa" strokeWidth={3} draggable
+            onMouseDown={e => { e.cancelBubble = true; }}
+            onDragMove={e => { e.cancelBubble = true; onUpdate?.(fromHandle(e.target.x(), e.target.y()), false); }}
+            onDragEnd={e => { e.cancelBubble = true; const patch = fromHandle(e.target.x(), e.target.y()); e.target.position(tip); onUpdate?.(patch, true); }} />
+        )}
       </Group>
     </>
   );

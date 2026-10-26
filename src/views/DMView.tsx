@@ -18,6 +18,9 @@ import { channel, send, tableState, type Measure, type Ping } from '../lib/sync'
 import { uid } from '../lib/id';
 import type { Camera, Scene, SceneFolder, Token } from '../types';
 import { playersCanSee, revealOp, tracksVision, visionCircles } from '../lib/vision';
+import { expireLasting, playTemplate } from '../lib/fx/play';
+import type { Element } from '../lib/fx/core';
+import EffectsBar from '../components/EffectsBar';
 import { loadSrd } from '../lib/monsters';
 import CloudModal from '../components/CloudModal';
 import { folderPath } from '../components/SceneTree';
@@ -68,6 +71,12 @@ export default function DMView() {
   }, []);
 
   useEffect(() => { loadSrd(); }, []);
+  // Lasting effects end on their own when their time or rounds run out.
+  useEffect(() => {
+    const t = setInterval(expireLasting, 1000);
+    const un = useCampaign.subscribe((a, b) => { if (a.encounter.round !== b.encounter.round || a.encounter.active !== b.encounter.active) expireLasting(); });
+    return () => { clearInterval(t); un(); };
+  }, []);
 
   // Track canvas size.
   useEffect(() => {
@@ -115,10 +124,12 @@ export default function DMView() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); c.undo(); return; }
       if (e.key === 'Escape') {
         if (u.targeting) { const t = u.targeting; u.set({ targeting: null }); t.onCancel?.(); return; }
-        u.set({ tool: 'select', selected: [], selectedTemplate: null }); return;
+        if (u.pendingEffect) { u.set({ pendingEffect: null, tool: 'select' }); return; }
+        u.set({ tool: 'select', selected: [], selectedTemplate: null, selectedDrawing: null }); return;
       }
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (u.selectedTemplate) { c.updateScene(c.activeSceneId, s => { s.templates = s.templates.filter(t => t.id !== u.selectedTemplate); }); u.set({ selectedTemplate: null }); }
+        if (u.selectedDrawing) { c.updateScene(c.activeSceneId, s => { s.drawings = s.drawings.filter(d => d.id !== u.selectedDrawing); }); u.set({ selectedDrawing: null }); }
+        else if (u.selectedTemplate) { c.updateScene(c.activeSceneId, s => { s.templates = s.templates.filter(t => t.id !== u.selectedTemplate); }); u.set({ selectedTemplate: null }); }
         else if (u.selected.length) { c.updateScene(c.activeSceneId, s => { s.tokens = s.tokens.filter(t => !u.selected.includes(t.id)); }); u.set({ selected: [] }); }
         return;
       }
@@ -178,10 +189,11 @@ export default function DMView() {
             mode="dm" scene={scene} width={size.w} height={size.h} camera={camera} onCamera={setCamera}
             creature={t => creatureOf(t, st.characters)} activeTokenIds={activeIds} showNames={() => true}
             targeting={!!ui.targeting} onTarget={pk => ui.targeting?.onPick(pk)}
+            fx={ui.fx} onFxDone={id => ui.set(u => ({ fx: u.fx.filter(f => f.id !== id) }))}
             measure={measure} pings={pings} vision={vision} playersCanSee={(x, y) => scene.id === st.tableSceneId && playersCanSee(scene, vision, x, y)} tool={ui.tool} selected={ui.selected} selectedTemplate={ui.selectedTemplate}
             diagonal={st.settings.diagonal} drawStyle={drawStyle}
             onSelect={(ids, add) => ui.set(s => ({ selected: add ? [...new Set([...s.selected, ...ids])] : ids, selectedTemplate: null }))}
-            onSelectTemplate={id => ui.set({ selectedTemplate: id })}
+            onSelectTemplate={id => ui.set({ selectedTemplate: id, selectedDrawing: null })}
             onMoveTokens={moves => upd(s => {
               moves.forEach(m => {
                 const t = s.tokens.find(t => t.id === m.id);
@@ -196,9 +208,23 @@ export default function DMView() {
             onFog={op => upd(s => { s.fog.ops.push(op); })}
             onDraw={d => upd(s => { s.drawings.push(d); })}
             onRemoveDrawing={id => upd(s => { s.drawings = s.drawings.filter(d => d.id !== id); })}
-            onTemplate={t => upd(s => { s.templates.push(t); })}
+            onTemplate={t => {
+              // Wall / Cone from the token card: the drawn template becomes the effect itself.
+              const pe = ui.pendingEffect;
+              if (pe) {
+                ui.set({ pendingEffect: null, tool: 'select' });
+                const style = pe.style === 'wall' ? (pe.duration === 'instant' ? 'beam' : 'wall') : (pe.duration === 'instant' ? 'blast' : 'cone');
+                playTemplate(t, style, pe.element as Element, pe.duration, ui.selected[0], pe.label);
+                return;
+              }
+              upd(s => { s.templates.push(t); });
+            }}
             onMoveTemplate={(id, x, y) => upd(s => { const t = s.templates.find(t => t.id === id); if (t) { t.x = x; t.y = y; } })}
             onRemoveTemplate={id => upd(s => { s.templates = s.templates.filter(t => t.id !== id); })}
+            onUpdateTemplate={(id, patch, final) => st.updateScene(scene.id, s => { const t = s.templates.find(t => t.id === id); if (t) Object.assign(t, patch); }, final)}
+            selectedDrawing={ui.selectedDrawing}
+            onSelectDrawing={id => ui.set({ selectedDrawing: id, selectedTemplate: null })}
+            onUpdateDrawing={(id, tf) => upd(s => { const d = s.drawings.find(d => d.id === id); if (d) d.tf = tf; })}
             onGridAlign={(x, y, w, h) => {
               const sz = (w + h) / 2;
               st.updateScene(scene.id, s => { s.grid.size = Math.round(sz * 10) / 10; s.grid.offsetX = Math.round((x % sz) * 10) / 10; s.grid.offsetY = Math.round((y % sz) * 10) / 10; s.grid.show = true; });
@@ -210,6 +236,7 @@ export default function DMView() {
             onTokenDblClick={id => { const t = scene.tokens.find(t => t.id === id); if (t?.monsterId) ui.set({ tab: 'monsters', monsterId: t.monsterId }); if (t?.charId) ui.set({ tab: 'party' }); }}
             onAskText={(x, y) => { const text = prompt('Label text'); if (text) upd(s => { s.drawings.push({ id: uid(), t: 'text', x, y, text, color: ui.color, size: Math.max(18, scene.grid.size * 0.4), dmOnly: ui.dmOnlyDraw }); }); }}
           />
+          {ui.pendingEffect && <div className="canvas-hint target">✏ Drag on the map to place the {ui.pendingEffect.label.toLowerCase()}. Esc to cancel.</div>}
           {ui.targeting && (
             <div className="target-bar">
               <span>{ui.targeting.hint}</span>
@@ -224,6 +251,7 @@ export default function DMView() {
           <DiceTray />
           <TokenCard />
           <TemplateCard />
+          <EffectsBar />
           <Toasts />
           {cloudOpen && <CloudModal onClose={() => setCloudOpen(false)} />}
         </div>

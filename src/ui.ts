@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Camera, TemplateShape } from './types';
 import type { Adv } from './lib/dice';
+import type { FxEvent } from './lib/fx/core';
 
 export type Tool =
   | 'select' | 'ruler' | 'ping'
@@ -31,6 +32,10 @@ interface UI {
   tableCamera: { cx: number; cy: number; viewW: number } | null;
   trayRolls: number; // how many recent rolls the dice tray shows
   targeting: Targeting | null; // waiting for the DM to click a target on the map
+  fx: FxEvent[]; // animations running on the DM's own map
+  selectedDrawing: string | null;
+  // Next area template drawn becomes this spell effect instead (from the token card's Wall / Cone).
+  pendingEffect: { style: 'wall' | 'cone'; element: string; duration: string; label: string } | null;
   toasts: { id: number; text: string; action?: { label: string; run: () => void } }[];
   set: (p: Partial<UI> | ((s: UI) => Partial<UI>)) => void;
   toast: (text: string, action?: { label: string; run: () => void }) => void;
@@ -58,7 +63,7 @@ export const useUI = create<UI>()((set, get) => ({
   tool: 'select', selected: [], selectedTemplate: null, tab: 'combat', monsterId: null,
   rollHidden: true, adv: 'normal', camera: {}, viewport: { w: 1, h: 1 },
   color: '#e11d48', strokeWidth: 4, fillShapes: false, dmOnlyDraw: false, brush: 1.5, tplColor: '#f97316',
-  cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(), targeting: null,
+  cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(), targeting: null, fx: [], selectedDrawing: null, pendingEffect: null,
   set: p => set(typeof p === 'function' ? p : () => p),
   toast: (text, action) => {
     const id = tid++;

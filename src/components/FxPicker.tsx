@@ -1,4 +1,5 @@
-import { manualFx, type ManualFx } from '../lib/fx/play';
+import { DURATIONS, manualFx, type ManualFx } from '../lib/fx/play';
+import { useUI } from '../ui';
 import { ELEMENTS, type Element } from '../lib/fx/core';
 import { useCampaign } from '../store';
 import type { FxPick } from '../types';
@@ -25,6 +26,8 @@ const OPTIONS: { id: string; label: string; fx: ManualFx; element?: boolean }[] 
   { id: 'darts', label: '✨ Magic missile', fx: { kind: 'spell', missile: 'darts' } },
   { id: 'burst10', label: '💥 Explosion, 10 ft', fx: { kind: 'burst', radiusFt: 10 }, element: true },
   { id: 'burst20', label: '💥 Explosion, 20 ft', fx: { kind: 'burst', radiusFt: 20 }, element: true },
+  { id: 'wall', label: '🧱 Wall (fire, ice, force, stone, thorns…)', fx: { kind: 'wall' }, element: true },
+  { id: 'cone', label: '🔺 Cone (breath, cone of cold…)', fx: { kind: 'cone' }, element: true },
   { id: 'heal', label: '💚 Healing', fx: { kind: 'heal' } },
   { id: 'poof', label: '💨 Smoke puff (on this token)', fx: { kind: 'poof' } },
 ];
@@ -49,6 +52,7 @@ export default function FxPicker({ tokenId }: { tokenId: string }) {
   const setElement = (v: Element) => save({ element: v });
   const setToHit = (v: string) => save({ toHit: v });
   const setDice = (v: string) => save({ dice: v });
+  const radius = saved.radius ?? '0', dur = saved.dur ?? 'instant';
   if (!on || !token) return null;
   const opt = OPTIONS.find(o => o.id === pick)!;
   const isAttack = opt.fx.kind === 'melee' || opt.fx.kind === 'missile' || opt.fx.kind === 'spell';
@@ -67,10 +71,27 @@ export default function FxPicker({ tokenId }: { tokenId: string }) {
           <label className="row gap sm-label">Damage <input value={dice} onChange={e => setDice(e.target.value)} placeholder="1d10" style={{ width: 84 }} aria-label="Damage dice" /></label>
         </div>
       )}
-      <button className="btn sm primary" disabled={!isTable} onClick={() => manualFx(tokenId, opt.fx, el, rolls ? { toHit: +toHit, dice: dice.replace(/\s/g, ''), label: opt.label.replace(/^\S+\s/, '').replace(/ \(.*\)$/, '') } : undefined)}>
-        {opt.fx.kind === 'poof' ? 'Play' : rolls ? '🎯 Pick target and roll' : '🎯 Pick target'}
-      </button>
-      <p className="hint">{!isTable ? 'Effects only play on the scene players are looking at.'
+      {pick === 'orb' && (
+        <div className="row gap wrap fx-roll">
+          <label className="row gap sm-label">Impact radius <select value={radius} onChange={e => save({ radius: e.target.value })} aria-label="Impact radius">{['0', '5', '10', '15', '20', '30'].map(r => <option key={r} value={r}>{r === '0' ? 'Target only' : `${r} ft`}</option>)}</select></label>
+          <label className="row gap sm-label">Lingers <select value={dur} onChange={e => save({ dur: e.target.value })} aria-label="How long it lingers">{DURATIONS.map(d => <option key={d.id} value={d.id}>{d.id === 'instant' ? 'No' : d.label}</option>)}</select></label>
+        </div>
+      )}
+      {(pick === 'wall' || pick === 'cone') && (
+        <label className="row gap sm-label">Lasts <select value={dur} onChange={e => save({ dur: e.target.value })} aria-label="Duration">{DURATIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}</select></label>
+      )}
+      {pick === 'wall' || pick === 'cone' ? (
+        <button className="btn sm primary" onClick={() => {
+          useUI.getState().set({ tool: pick === 'wall' ? 'tpl-line' : 'tpl-cone', pendingEffect: { style: pick as 'wall' | 'cone', element: el, duration: dur, label: `${ELEMENTS.find(x => x.id === el)?.label ?? ''} ${pick}` } });
+        }}>✏ Drag it on the map</button>
+      ) : (
+        <button className="btn sm primary" disabled={!isTable} onClick={() => manualFx(tokenId, opt.fx.kind === 'spell' ? { ...opt.fx, radiusFt: +radius, linger: dur } : opt.fx, el, rolls ? { toHit: +toHit, dice: dice.replace(/\s/g, ''), label: opt.label.replace(/^\S+\s/, '').replace(/ \(.*\)$/, '') } : undefined)}>
+          {opt.fx.kind === 'poof' ? 'Play' : rolls ? '🎯 Pick target and roll' : '🎯 Pick target'}
+        </button>
+      )}
+      <p className="hint">{pick === 'wall' ? 'Drag from one end of the wall to the other. Start the drag on a token to begin at its centre.'
+        : pick === 'cone' ? 'Drag out from the caster to aim the cone. Start the drag on the caster’s token.'
+        : !isTable ? 'Effects only play on the scene players are looking at.'
         : !isAttack ? 'Plays on the table screen.'
           : rolls ? 'Rolls to hit against the target’s AC, shows hit or miss, and offers to apply the damage.'
             : 'Fill in To hit to roll a real attack. Left empty, it only plays the animation (hold Shift when clicking for a miss).'}</p>

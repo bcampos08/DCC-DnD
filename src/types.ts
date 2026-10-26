@@ -102,12 +102,14 @@ export type FogOp =
   | { t: 'brush'; mode: 'reveal' | 'hide'; r: number; pts: number[]; auto?: boolean }
   | { t: 'all'; mode: 'reveal' | 'hide'; auto?: boolean };
 
-export type Drawing =
+// tf: moved/rotated/resized with the select tool (applied on top of the original shape)
+export interface DrawTf { x: number; y: number; rot: number; sx: number; sy: number }
+export type Drawing = { tf?: DrawTf } & (
   | { id: string; t: 'pen'; pts: number[]; color: string; width: number; dmOnly?: boolean }
   | { id: string; t: 'line'; pts: number[]; color: string; width: number; dmOnly?: boolean }
   | { id: string; t: 'rect'; x: number; y: number; w: number; h: number; color: string; width: number; fill?: boolean; dmOnly?: boolean }
   | { id: string; t: 'circle'; x: number; y: number; r: number; color: string; width: number; fill?: boolean; dmOnly?: boolean }
-  | { id: string; t: 'text'; x: number; y: number; text: string; color: string; size: number; dmOnly?: boolean };
+  | { id: string; t: 'text'; x: number; y: number; text: string; color: string; size: number; dmOnly?: boolean });
 
 export type TemplateShape = 'circle' | 'cone' | 'cube' | 'line';
 export interface AreaTemplate {
@@ -144,6 +146,7 @@ export interface Scene {
   templates: AreaTemplate[];
   // autoReveal: player tokens clear fog around them as they move. light 'dark' = only darkvision and carried light count.
   fog: { enabled: boolean; ops: FogOp[]; autoReveal?: boolean; light?: 'lit' | 'dark'; sightFeet?: number };
+  effects?: LastingFx[]; // spell effects that stay on the map for a while
   tableCamera?: Camera;
 }
 
@@ -236,4 +239,18 @@ export interface Note { id: string; title: string; body: string; sceneId?: strin
 
 export interface SceneFolder { id: string; name: string; parentId?: string; collapsed?: boolean }
 
-export interface FxPick { pick: string; element: string; toHit: string; dice: string }
+export interface FxPick { pick: string; element: string; toHit: string; dice: string; radius?: string; dur?: string }
+
+// A spell effect that stays on the map (wall of fire, lingering cloud, burning ground...).
+export interface LastingFx {
+  id: string;
+  label: string;
+  kind: 'area' | 'ring' | 'wall' | 'cone';
+  element: string;
+  x: number; y: number; // centre (area/ring) or start point (wall/cone)
+  r?: number; // area/ring radius in px
+  angle?: number; length?: number; // wall/cone
+  startedAt: number;
+  endsAt?: number; // Date.now() when it stops (seconds-based)
+  endsRound?: number; // combat round when it stops (rounds-based)
+}

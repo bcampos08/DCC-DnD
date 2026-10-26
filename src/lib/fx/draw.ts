@@ -1,4 +1,5 @@
-import { ELEMENT_COLOR, EMITS_LIGHT, timeline, type FxEvent, type Pt, type Weapon } from './core';
+import { ELEMENT_COLOR, EMITS_LIGHT, timeline, type Element, type FxEvent, type Pt, type Weapon } from './core';
+import type { LastingFx } from '../../types';
 
 // Draws one frame of an effect onto a 2D canvas in map coordinates.
 // t = ms since the effect started. Light sources for dark scenes are pushed onto `lights`.
@@ -277,6 +278,7 @@ function missile(ctx: Ctx, fx: FxEvent, t: number, lights: Light[]) {
     }
     ctx.restore();
   }
+  if (m === 'orb' && fx.radius && t > travel) burst(ctx, { ...fx, kind: 'burst', from: undefined }, t - travel, lights);
   if (fx.result !== 'miss') {
     impact(ctx, fx, fx.to, (t - travel) / 450);
     if (m === 'boulder' && t > travel) { const kk = clamp((t - travel) / 500); ctx.globalAlpha = 1 - kk; ctx.fillStyle = '#a8a29e'; const r = rng(fx.id + 'dust'); for (let i = 0; i < 12; i++) { const an = r() * Math.PI * 2, d = g * 0.9 * easeOut(kk) * (0.5 + r()); ctx.beginPath(); ctx.arc(fx.to.x + Math.cos(an) * d, fx.to.y + Math.sin(an) * d, g * 0.12 * (1 - kk), 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1; }
@@ -399,4 +401,131 @@ export function drawFx(ctx: Ctx, fx: FxEvent, t: number, lights: Light[]) {
     case 'poof': poof(ctx, fx, t); break;
   }
   ctx.restore();
+}
+
+// ---------- lasting effects (loop until they end) ----------
+// Particles are spread along the effect's shape; each one cycles on its own timer.
+function lastingPoints(e: LastingFx, g: number): { pts: Pt[]; thick: number } {
+  const pts: Pt[] = [];
+  const r = rng(e.id + 'pts');
+  if (e.kind === 'area') {
+    const R = e.r ?? g * 2;
+    const n = Math.min(160, Math.max(14, Math.round((R * R) / (g * g) * 3)));
+    for (let i = 0; i < n; i++) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * R * 0.95; pts.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d }); }
+    return { pts, thick: R };
+  }
+  if (e.kind === 'ring') {
+    const R = e.r ?? g * 2, n = Math.max(16, Math.round((2 * Math.PI * R) / (g * 0.3)));
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + r() * 0.05; pts.push({ x: e.x + Math.cos(a) * R, y: e.y + Math.sin(a) * R }); }
+    return { pts, thick: g * 0.4 };
+  }
+  const a = e.angle ?? 0, L = e.length ?? g * 6;
+  if (e.kind === 'wall') {
+    const n = Math.max(8, Math.round(L / (g * 0.25)));
+    for (let i = 0; i <= n; i++) { const k = i / n; pts.push({ x: e.x + Math.cos(a) * L * k, y: e.y + Math.sin(a) * L * k }); }
+    return { pts, thick: g * 0.4 };
+  }
+  // cone
+  const n = Math.min(160, Math.max(20, Math.round((L * L) / (g * g) * 1.5)));
+  for (let i = 0; i < n; i++) { const d = Math.sqrt(r()) * L, sp = (r() - 0.5) * 2 * Math.atan(0.5) * (d / L); pts.push({ x: e.x + Math.cos(a + sp) * d, y: e.y + Math.sin(a + sp) * d }); }
+  return { pts, thick: L };
+}
+
+const ptsCache = new Map<string, { key: string; v: ReturnType<typeof lastingPoints> }>();
+
+export function drawLasting(ctx: Ctx, e: LastingFx, now: number, g: number, lights: Light[]) {
+  const key = [e.x, e.y, e.r, e.angle, e.length, e.kind, g].join(',');
+  let c = ptsCache.get(e.id);
+  if (!c || c.key !== key) { c = { key, v: lastingPoints(e, g) }; ptsCache.set(e.id, c); }
+  const { pts } = c.v;
+  const el = e.element as Element;
+  const [inner, outer] = ELEMENT_COLOR[el] ?? ELEMENT_COLOR.physical;
+  const age = now - e.startedAt;
+  const fadeIn = clamp(age / 400);
+  const fadeOut = e.endsAt ? clamp((e.endsAt - now) / 500) : 1;
+  const A = fadeIn * fadeOut;
+  if (A <= 0) return;
+  const r = rng(e.id + 'p');
+  const wall = e.kind === 'wall' || e.kind === 'ring';
+  ctx.save();
+
+  // Soft base so the area reads clearly.
+  if (e.kind === 'area') glow(ctx, e.x, e.y, (e.r ?? g * 2) * 1.05, hexA(outer, 0.35), hexA(outer, 0.22), A);
+
+  if (el === 'physical' && wall) {
+    // Wall of stone: a row of grey blocks.
+    ctx.globalAlpha = A;
+    for (let i = 0; i < pts.length - 1; i += 2) {
+      const p = pts[i], q = pts[Math.min(pts.length - 1, i + 2)], ang = Math.atan2(q.y - p.y, q.x - p.x), len = Math.hypot(q.x - p.x, q.y - p.y);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(ang);
+      ctx.fillStyle = i % 4 ? '#78716c' : '#a8a29e'; ctx.strokeStyle = '#292524'; ctx.lineWidth = 2;
+      ctx.fillRect(0, -g * 0.22, len, g * 0.44); ctx.strokeRect(0, -g * 0.22, len, g * 0.44);
+      ctx.restore();
+    }
+  } else if (el === 'force' && wall) {
+    ctx.globalAlpha = A * (0.55 + 0.15 * Math.sin(now / 300));
+    ctx.strokeStyle = outer; ctx.lineWidth = g * 0.3; ctx.lineCap = 'round';
+    ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); if (e.kind === 'ring') ctx.closePath(); ctx.stroke();
+    ctx.strokeStyle = inner; ctx.lineWidth = g * 0.06; ctx.stroke();
+  } else if (el === 'cold' && wall) {
+    // Wall of ice: jagged crystals that glint.
+    ctx.globalAlpha = A;
+    pts.forEach((p, i) => {
+      const h = g * (0.35 + r() * 0.35), w = g * 0.18;
+      ctx.fillStyle = i % 2 ? 'rgba(186,230,253,.85)' : 'rgba(224,242,254,.9)'; ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(p.x - w, p.y + g * 0.15); ctx.lineTo(p.x, p.y - h); ctx.lineTo(p.x + w, p.y + g * 0.15); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if ((Math.floor(now / 200) + i) % 11 === 0) glow(ctx, p.x, p.y - h * 0.6, g * 0.2, '#fff', '#e0f2fe', A);
+    });
+  } else if ((el === 'poison' || el === 'acid') && wall) {
+    // Wall of thorns: tangled green brambles.
+    ctx.globalAlpha = A; ctx.lineCap = 'round';
+    pts.forEach((p, i) => {
+      ctx.strokeStyle = i % 2 ? '#3f6212' : '#4d7c0f'; ctx.lineWidth = g * 0.08;
+      const a = r() * Math.PI * 2, l = g * 0.35;
+      ctx.beginPath(); ctx.moveTo(p.x - Math.cos(a) * l, p.y - Math.sin(a) * l); ctx.quadraticCurveTo(p.x, p.y + g * 0.1, p.x + Math.cos(a) * l, p.y + Math.sin(a) * l); ctx.stroke();
+      ctx.strokeStyle = '#d9f99d'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + g * 0.08, p.y - g * 0.12); ctx.stroke();
+    });
+  } else if (el === 'lightning') {
+    pts.forEach(p => glow(ctx, p.x, p.y, g * 0.35, hexA(inner, 0.5), hexA(outer, 0.35), A * 0.6));
+    const rr = rng(e.id + Math.floor(now / 90));
+    for (let k = 0; k < Math.max(2, pts.length / 12); k++) {
+      const a = pts[Math.floor(rr() * pts.length)], b = pts[Math.floor(rr() * pts.length)];
+      if (Math.hypot(a.x - b.x, a.y - b.y) > g * 2.5) continue;
+      ctx.globalAlpha = A; ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y);
+      for (let s = 1; s <= 4; s++) { const q = lerpPt(a, b, s / 4); ctx.lineTo(q.x + (rr() - 0.5) * g * 0.3, q.y + (rr() - 0.5) * g * 0.3); }
+      ctx.stroke();
+    }
+  } else if (el === 'thunder') {
+    for (let k = 0; k < 3; k++) {
+      const ph = ((now / 1400) + k / 3) % 1;
+      ctx.globalAlpha = A * (1 - ph) * 0.8; ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = g * 0.08;
+      if (e.kind === 'area' || e.kind === 'ring') { ctx.beginPath(); ctx.arc(e.x, e.y, (e.r ?? g * 2) * ph, 0, Math.PI * 2); ctx.stroke(); }
+      else pts.forEach((p, i) => { if (i % 3 === 0) { ctx.beginPath(); ctx.arc(p.x, p.y, g * 0.6 * ph, 0, Math.PI * 2); ctx.stroke(); } });
+    }
+  } else {
+    // Rising/drifting particles: flames, mist, motes, smoke.
+    const rise = el === 'fire' || el === 'radiant' || el === 'necrotic' ? 1 : el === 'cold' ? 0.2 : 0.35;
+    const size = el === 'fire' ? 0.42 : el === 'radiant' ? 0.12 : el === 'cold' || el === 'poison' || el === 'necrotic' || el === 'acid' ? 0.6 : 0.4;
+    pts.forEach((p, i) => {
+      const period = 700 + r() * 900, ph = ((now / period) + r()) % 1;
+      const x = p.x + Math.sin(now / 500 + i) * g * 0.08, y = p.y - ph * g * rise * (wall ? 0.9 : 0.6);
+      const s = g * size * (el === 'fire' ? 1 - ph * 0.7 : 0.6 + ph * 0.6);
+      glow(ctx, x, y, s, i % 3 ? inner : outer, outer, A * Math.sin(Math.PI * ph) * (el === 'radiant' ? 1 : 0.85));
+    });
+    if (el === 'fire') pts.forEach((p, i) => { if (i % 4 === 0) glow(ctx, p.x, p.y, g * 0.3, '#fef3c7', '#f97316', A * 0.6); });
+  }
+  ctx.restore();
+
+  if (EMITS_LIGHT.includes(el)) {
+    const step = Math.max(1, Math.floor(pts.length / 10));
+    for (let i = 0; i < pts.length; i += step) lights.push({ x: pts[i].x, y: pts[i].y, r: g * (e.kind === 'area' || e.kind === 'cone' ? 1.5 : 2.2) * A });
+    if (e.kind === 'area') lights.push({ x: e.x, y: e.y, r: ((e.r ?? g * 2) + g) * A });
+  }
+}
+
+function hexA(hex: string, a: number) {
+  if (!hex.startsWith('#')) return hex;
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }

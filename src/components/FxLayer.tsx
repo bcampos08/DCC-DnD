@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 import { Layer, Shape } from 'react-konva';
 import type Konva from 'konva';
 import type { FogOp, Scene } from '../types';
-import { drawFx, type Light } from '../lib/fx/draw';
+import { drawFx, drawLasting, type Light } from '../lib/fx/draw';
 import { timeline, type FxEvent } from '../lib/fx/core';
 
 // Table screen only: draws running effects every frame. In dark scenes effects only show where
 // players can see (current sight, DM-lit areas, or light the effects give off themselves).
 export default function FxLayer({ fx, scene, vision, lightsRef, fogLayers, onDone }: {
-  fx: FxEvent[];
+  fx: FxEvent[]; // one-off animations (lasting effects come from scene.effects)
   scene: Scene;
   vision: { x: number; y: number; r: number }[] | null;
   lightsRef: React.MutableRefObject<Light[]>;
@@ -17,24 +17,26 @@ export default function FxLayer({ fx, scene, vision, lightsRef, fogLayers, onDon
 }) {
   const layer = useRef<Konva.Layer>(null);
   const live = useRef(fx); live.current = fx;
+  const lasting = useRef(scene.effects ?? []); lasting.current = scene.effects ?? [];
+  const grid = useRef(scene.grid.size); grid.current = scene.grid.size;
   const visionRef = useRef(vision); visionRef.current = vision;
   const done = useRef(onDone); done.current = onDone;
   const mask = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    if (!fx.length) return;
+    if (!fx.length && !(scene.effects ?? []).length) return;
     let raf = 0;
     const tick = () => {
       layer.current?.batchDraw();
       if (visionRef.current) fogLayers.forEach(l => l.current?.batchDraw());
       const now = Date.now();
       for (const f of live.current) if (now - f.at > timeline(f).total + 100) done.current(f.id);
-      if (live.current.length) raf = requestAnimationFrame(tick);
+      if (live.current.length || lasting.current.length) raf = requestAnimationFrame(tick);
       else { lightsRef.current = []; fogLayers.forEach(l => l.current?.batchDraw()); layer.current?.batchDraw(); }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [fx.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fx.length, (scene.effects ?? []).length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const W = scene.map?.width ?? 30 * scene.grid.size, H = scene.map?.height ?? 20 * scene.grid.size;
 
@@ -45,6 +47,7 @@ export default function FxLayer({ fx, scene, vision, lightsRef, fogLayers, onDon
           const c = kctx._context as CanvasRenderingContext2D;
           const now = Date.now();
           const lights: Light[] = [];
+          for (const e of lasting.current) if (!e.endsAt || now < e.endsAt) drawLasting(c, e, now, grid.current, lights);
           for (const f of live.current) {
             const t = now - f.at;
             if (t < 0 || t > timeline(f).total) continue;

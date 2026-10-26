@@ -64,7 +64,7 @@ export function timeline(fx: FxEvent): { impact: number; total: number; travel: 
     case 'melee': return { travel: 420, impact: 440, total: 1150 };
     case 'missile': {
       const travel = Math.max(120, (dist / SPEED[fx.missile ?? 'arrow']) * 1000);
-      return { travel, impact: travel, total: travel + (fx.result === 'miss' ? 450 : 900) };
+      return { travel, impact: travel, total: travel + (fx.missile === 'orb' && fx.radius ? 1600 : fx.result === 'miss' ? 450 : 900) };
     }
     case 'burst': {
       const travel = fx.from ? Math.max(150, (dist / SPEED.orb) * 1000) : 0;
