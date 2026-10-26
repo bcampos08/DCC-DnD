@@ -65,6 +65,7 @@ export interface Character {
   saveProf?: Ability[];
   skillProf?: Record<string, number>; // 1 proficient, 2 expertise
   notes?: string;
+  fxPick?: FxPick; // last effect chosen for this character (follows them across scenes)
   conditions: string[];
   concentrating?: boolean;
   ddbId?: string;
@@ -92,6 +93,7 @@ export interface Token {
   concentrating?: boolean;
   note?: string; // DM-only note for this one token
   light?: number; // feet of light this token carries (torch 40, lantern 60)
+  fxPick?: FxPick; // last effect chosen in the token card's Play an effect
 }
 
 // auto: cleared by a player token moving (counts as "explored"); otherwise drawn by the DM.
@@ -233,3 +235,5 @@ export interface DdbSheet {
 export interface Note { id: string; title: string; body: string; sceneId?: string; updatedAt: number }
 
 export interface SceneFolder { id: string; name: string; parentId?: string; collapsed?: boolean }
+
+export interface FxPick { pick: string; element: string; toHit: string; dice: string }

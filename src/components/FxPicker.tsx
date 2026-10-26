@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { manualFx, type ManualFx } from '../lib/fx/play';
 import { ELEMENTS, type Element } from '../lib/fx/core';
 import { useCampaign } from '../store';
+import type { FxPick } from '../types';
 
 const OPTIONS: { id: string; label: string; fx: ManualFx; element?: boolean }[] = [
   { id: 'sword', label: '⚔ Sword swing', fx: { kind: 'melee', weapon: 'sword' } },
@@ -33,11 +33,23 @@ const OPTIONS: { id: string; label: string; fx: ManualFx; element?: boolean }[] 
 export default function FxPicker({ tokenId }: { tokenId: string }) {
   const on = useCampaign(s => s.settings.fx !== false);
   const isTable = useCampaign(s => s.activeSceneId === s.tableSceneId);
-  const [pick, setPick] = useState('sword');
-  const [element, setElement] = useState<Element>('fire');
-  const [toHit, setToHit] = useState('');
-  const [dice, setDice] = useState('');
-  if (!on) return null;
+  // Each token remembers its own choice (player characters keep theirs across scenes).
+  const token = useCampaign(s => s.scenes.find(x => x.id === s.activeSceneId)?.tokens.find(t => t.id === tokenId));
+  const char = useCampaign(s => (token?.charId ? s.characters.find(c => c.id === token.charId) : undefined));
+  const saved: FxPick = (char ?? token)?.fxPick ?? { pick: 'sword', element: 'fire', toHit: '', dice: '' };
+  const { pick, toHit, dice } = saved;
+  const element = saved.element as Element;
+  const save = (p: Partial<FxPick>) => {
+    const next = { ...saved, ...p };
+    const st = useCampaign.getState();
+    if (char) st.updateChar(char.id, { fxPick: next });
+    else st.updateScene(st.activeSceneId, s => { const t = s.tokens.find(t => t.id === tokenId); if (t) t.fxPick = next; }, false);
+  };
+  const setPick = (v: string) => save({ pick: v });
+  const setElement = (v: Element) => save({ element: v });
+  const setToHit = (v: string) => save({ toHit: v });
+  const setDice = (v: string) => save({ dice: v });
+  if (!on || !token) return null;
   const opt = OPTIONS.find(o => o.id === pick)!;
   const isAttack = opt.fx.kind === 'melee' || opt.fx.kind === 'missile' || opt.fx.kind === 'spell';
   const rolls = isAttack && toHit.trim() !== '';

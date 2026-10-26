@@ -41,7 +41,7 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     scene = {
       ...sc,
       // In dark scenes, enemies outside everyone's current sight aren't sent to the table.
-      tokens: sc.tokens.filter(t => !t.hidden && (!vision || t.kind === 'pc' || seenNow(sc, vision, t.x, t.y))).map(({ note: _note, ...t }) => (t.kind === 'pc' ? t : { ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 })),
+      tokens: sc.tokens.filter(t => !t.hidden && (!vision || t.kind === 'pc' || seenNow(sc, vision, t.x, t.y))).map(({ note: _note, fxPick: _fxPick, ...t }) => (t.kind === 'pc' ? t : { ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 })),
       drawings: sc.drawings.filter(d => !d.dmOnly),
     };
   }
