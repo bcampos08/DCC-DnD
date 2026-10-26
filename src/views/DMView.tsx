@@ -210,7 +210,15 @@ export default function DMView() {
             onTokenDblClick={id => { const t = scene.tokens.find(t => t.id === id); if (t?.monsterId) ui.set({ tab: 'monsters', monsterId: t.monsterId }); if (t?.charId) ui.set({ tab: 'party' }); }}
             onAskText={(x, y) => { const text = prompt('Label text'); if (text) upd(s => { s.drawings.push({ id: uid(), t: 'text', x, y, text, color: ui.color, size: Math.max(18, scene.grid.size * 0.4), dmOnly: ui.dmOnlyDraw }); }); }}
           />
-          {ui.targeting && <div className="canvas-hint target">{ui.targeting.hint}</div>}
+          {ui.targeting && (
+            <div className="target-bar">
+              <span>{ui.targeting.hint}</span>
+              {ui.targeting.rolls && st.settings.fx !== false && (ui.rollHidden
+                ? <span className="tb-warn">🙈 Hidden roll: it won't animate on the TV. <button className="btn sm primary" onClick={() => ui.set({ rollHidden: false })}>Make public</button></span>
+                : <span className="tb-ok">📺 Public roll: players will see it</span>)}
+              {st.activeSceneId !== st.tableSceneId && <span className="tb-warn">Players are on a different scene, so nothing will animate.</span>}
+            </div>
+          )}
           {ui.tool === 'grid-align' && <div className="canvas-hint">Drag a box over exactly one square of the map’s printed grid. Esc to cancel.</div>}
           {scene.tokens.length === 0 && ui.tool === 'select' && <div className="canvas-hint soft">Add monsters from the 🐉 Monsters tab, or party tokens from 🛡 Party. Scroll to zoom, drag to pan.</div>}
           <DiceTray />

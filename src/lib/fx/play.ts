@@ -12,26 +12,30 @@ import { cubeRect } from '../geometry';
 
 export const fxOn = () => useCampaign.getState().settings.fx !== false;
 
-export function playFx(e: Omit<FxEvent, 'id' | 'at' | 'grid' | 'sceneId'>, sceneId = useCampaign.getState().activeSceneId) {
+// Returns false when nothing was sent to the table screen.
+export function playFx(e: Omit<FxEvent, 'id' | 'at' | 'grid' | 'sceneId'>, sceneId = useCampaign.getState().activeSceneId): boolean {
   const c = useCampaign.getState();
-  if (!fxOn() || sceneId !== c.tableSceneId) return; // only on the scene players are looking at
+  if (!fxOn() || sceneId !== c.tableSceneId) return false; // only on the scene players are looking at
   const sc = c.scenes.find(s => s.id === sceneId);
-  if (!sc) return;
+  if (!sc) return false;
   const fx: FxEvent = { ...e, id: uid(), at: Date.now() + 80, grid: sc.grid.size, sceneId };
   send({ type: 'fx', fx });
   if (c.settings.fxSound !== false) playFxSound(fx, c.settings.fxVolume ?? 0.7);
+  return true;
 }
+
+const makePublic = { label: 'Make rolls public', run: () => useUI.getState().set({ rollHidden: false }) };
 
 function tokenOnScene(id: string) {
   const c = useCampaign.getState();
   return c.scenes.find(s => s.id === c.activeSceneId)?.tokens.find(t => t.id === id);
 }
 
-export function startTargeting(hint: string, allowPoint: boolean, onPick: (p: TargetPick) => boolean | void, onCancel?: () => void) {
+export function startTargeting(hint: string, allowPoint: boolean, onPick: (p: TargetPick) => boolean | void, onCancel?: () => void, rolls = false) {
   const ui = useUI.getState();
   ui.set({
     targeting: {
-      hint, allowPoint, onCancel,
+      hint, allowPoint, onCancel, rolls,
       onPick: p => { if (onPick(p) !== false) useUI.getState().set({ targeting: null }); },
     },
   });
@@ -62,6 +66,7 @@ export function attack(spec: AttackSpec) {
     false,
     p => { if (!p.tokenId) return false; resolveAttack(spec, p.tokenId); },
     () => rollAttack(spec.name, spec.who, spec.toHit, spec.dmg),
+    true,
   );
 }
 
@@ -87,10 +92,11 @@ function resolveAttack(spec: AttackSpec, targetId: string, fxLook?: Pick<FxEvent
     });
   } else if (outcome === 'miss') useUI.getState().toast(`${spec.name} misses ${look.name} (${r.total} vs AC ${ac})`);
 
-  // Hidden rolls never animate.
-  if (r.hidden) return;
+  // Hidden rolls never animate. Say so, so a missing animation isn't a mystery.
+  if (r.hidden) { useUI.getState().toast('🙈 That roll was hidden, so nothing played on the TV.', makePublic); return; }
+  if (c.activeSceneId !== c.tableSceneId) { useUI.getState().toast('No animation: the players are looking at a different scene.'); return; }
   const from = attackerFor(spec, target);
-  if (!from) return;
+  if (!from) { useUI.getState().toast(`No animation: couldn't find ${spec.who}'s token on this scene.`); return; }
   const distSq = Math.hypot(from.x - target.x, from.y - target.y) / (c.scenes.find(s => s.id === c.activeSceneId)?.grid.size ?? 70);
   const look2 = fxLook ?? classifyAttack(spec.name, spec.desc ?? '', spec.dmg[0]?.type, distSq);
   playFx({ ...look2, from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, result: outcome });
@@ -116,7 +122,7 @@ export function manualFx(sourceId: string, m: ManualFx, element: Element, roll?:
     const look = { kind: m.kind === 'melee' ? 'melee' : 'missile', weapon: m.kind === 'melee' ? m.weapon : undefined, missile: m.kind === 'melee' ? undefined : m.missile, element } as Pick<FxEvent, 'kind' | 'weapon' | 'missile' | 'element'>;
     startTargeting(`🎯 Click the target of ${who}'s ${roll.label}. Esc rolls without a target.`, false,
       p => { if (!p.tokenId) return false; resolveAttack(spec, p.tokenId, look); },
-      () => rollAttack(spec.name, spec.who, spec.toHit, spec.dmg));
+      () => rollAttack(spec.name, spec.who, spec.toHit, spec.dmg), true);
     return;
   }
   if (m.kind === 'poof') { playFx({ kind: 'poof', to: { x: src.x, y: src.y }, element: 'physical' }); return; }

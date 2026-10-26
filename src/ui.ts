@@ -40,6 +40,7 @@ export interface Pick { tokenId?: string; x: number; y: number; shift: boolean }
 export interface Targeting {
   hint: string;
   allowPoint: boolean; // can click empty map as well as tokens
+  rolls?: boolean; // makes a roll (so Hidden/Public matters for the animation)
   onPick: (p: Pick) => void;
   onCancel?: () => void; // Esc
 }
