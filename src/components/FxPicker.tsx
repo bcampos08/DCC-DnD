@@ -35,19 +35,33 @@ export default function FxPicker({ tokenId }: { tokenId: string }) {
   const isTable = useCampaign(s => s.activeSceneId === s.tableSceneId);
   const [pick, setPick] = useState('sword');
   const [element, setElement] = useState<Element>('fire');
+  const [toHit, setToHit] = useState('');
+  const [dice, setDice] = useState('');
   if (!on) return null;
   const opt = OPTIONS.find(o => o.id === pick)!;
+  const isAttack = opt.fx.kind === 'melee' || opt.fx.kind === 'missile' || opt.fx.kind === 'spell';
+  const rolls = isAttack && toHit.trim() !== '';
+  const el: Element = opt.id === 'lightning' ? 'lightning' : opt.id === 'darts' ? 'force' : opt.element ? element : 'physical';
   return (
     <details className="notes-box fx-picker">
       <summary>🎬 Play an effect</summary>
       <div className="row gap wrap">
         <select value={pick} onChange={e => setPick(e.target.value)} aria-label="Effect">{OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}</select>
         {opt.element && <select value={element} onChange={e => setElement(e.target.value as Element)} aria-label="Element">{ELEMENTS.map(el => <option key={el.id} value={el.id}>{el.label}</option>)}</select>}
-        <button className="btn sm primary" disabled={!isTable} onClick={() => manualFx(tokenId, opt.fx, opt.id === 'lightning' ? 'lightning' : opt.id === 'darts' ? 'force' : opt.element ? element : 'physical')}>
-          {opt.fx.kind === 'poof' ? 'Play' : '🎯 Pick target'}
-        </button>
       </div>
-      <p className="hint">{isTable ? 'Plays on the table screen only. Use it for players’ attacks and spells from D&D Beyond.' : 'Effects only play on the scene players are looking at.'}</p>
+      {isAttack && (
+        <div className="row gap wrap fx-roll">
+          <label className="row gap sm-label">To hit <input type="number" value={toHit} onChange={e => setToHit(e.target.value)} placeholder="+5" style={{ width: 64 }} aria-label="Attack bonus" /></label>
+          <label className="row gap sm-label">Damage <input value={dice} onChange={e => setDice(e.target.value)} placeholder="1d10" style={{ width: 84 }} aria-label="Damage dice" /></label>
+        </div>
+      )}
+      <button className="btn sm primary" disabled={!isTable} onClick={() => manualFx(tokenId, opt.fx, el, rolls ? { toHit: +toHit, dice: dice.replace(/\s/g, ''), label: opt.label.replace(/^\S+\s/, '').replace(/ \(.*\)$/, '') } : undefined)}>
+        {opt.fx.kind === 'poof' ? 'Play' : rolls ? '🎯 Pick target and roll' : '🎯 Pick target'}
+      </button>
+      <p className="hint">{!isTable ? 'Effects only play on the scene players are looking at.'
+        : !isAttack ? 'Plays on the table screen.'
+          : rolls ? 'Rolls to hit against the target’s AC, shows hit or miss, and offers to apply the damage.'
+            : 'Fill in To hit to roll a real attack. Left empty, it only plays the animation (hold Shift when clicking for a miss).'}</p>
     </details>
   );
 }

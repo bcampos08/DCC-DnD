@@ -1,5 +1,5 @@
 import { useCampaign, creatureOf } from '../../store';
-import { useUI, type Pick } from '../../ui';
+import { useUI, type Pick as TargetPick } from '../../ui';
 import { send } from '../sync';
 import { uid } from '../id';
 import { rollAttack } from '../roll';
@@ -27,7 +27,7 @@ function tokenOnScene(id: string) {
   return c.scenes.find(s => s.id === c.activeSceneId)?.tokens.find(t => t.id === id);
 }
 
-export function startTargeting(hint: string, allowPoint: boolean, onPick: (p: Pick) => boolean | void, onCancel?: () => void) {
+export function startTargeting(hint: string, allowPoint: boolean, onPick: (p: TargetPick) => boolean | void, onCancel?: () => void) {
   const ui = useUI.getState();
   ui.set({
     targeting: {
@@ -65,7 +65,7 @@ export function attack(spec: AttackSpec) {
   );
 }
 
-function resolveAttack(spec: AttackSpec, targetId: string) {
+function resolveAttack(spec: AttackSpec, targetId: string, fxLook?: Pick<FxEvent, 'kind' | 'weapon' | 'missile' | 'element'>) {
   const c = useCampaign.getState();
   const target = tokenOnScene(targetId);
   if (!target) return;
@@ -92,7 +92,7 @@ function resolveAttack(spec: AttackSpec, targetId: string) {
   const from = attackerFor(spec, target);
   if (!from) return;
   const distSq = Math.hypot(from.x - target.x, from.y - target.y) / (c.scenes.find(s => s.id === c.activeSceneId)?.grid.size ?? 70);
-  const look2 = classifyAttack(spec.name, spec.desc ?? '', spec.dmg[0]?.type, distSq);
+  const look2 = fxLook ?? classifyAttack(spec.name, spec.desc ?? '', spec.dmg[0]?.type, distSq);
   playFx({ ...look2, from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, result: outcome });
 }
 
@@ -105,9 +105,20 @@ export type ManualFx =
   | { kind: 'heal' }
   | { kind: 'poof' };
 
-export function manualFx(sourceId: string, m: ManualFx, element: Element) {
+// With `roll` filled in, the effect is a real attack: rolled against the target's AC, with hit/miss and damage.
+export function manualFx(sourceId: string, m: ManualFx, element: Element, roll?: { toHit: number; dice: string; label: string }) {
   const src = tokenOnScene(sourceId);
   if (!src) return;
+  if (roll && (m.kind === 'melee' || m.kind === 'missile' || m.kind === 'spell')) {
+    const c = useCampaign.getState();
+    const who = creatureOf(src, c.characters).name;
+    const spec: AttackSpec = { name: roll.label, who, toHit: roll.toHit, dmg: roll.dice ? [{ dice: roll.dice, type: element === 'physical' ? 'damage' : element }] : [], attackerId: src.id };
+    const look = { kind: m.kind === 'melee' ? 'melee' : 'missile', weapon: m.kind === 'melee' ? m.weapon : undefined, missile: m.kind === 'melee' ? undefined : m.missile, element } as Pick<FxEvent, 'kind' | 'weapon' | 'missile' | 'element'>;
+    startTargeting(`🎯 Click the target of ${who}'s ${roll.label}. Esc rolls without a target.`, false,
+      p => { if (!p.tokenId) return false; resolveAttack(spec, p.tokenId, look); },
+      () => rollAttack(spec.name, spec.who, spec.toHit, spec.dmg));
+    return;
+  }
   if (m.kind === 'poof') { playFx({ kind: 'poof', to: { x: src.x, y: src.y }, element: 'physical' }); return; }
   const what = m.kind === 'heal' ? 'who gets healed' : m.kind === 'burst' ? 'where it explodes' : 'the target';
   startTargeting(`🎬 Click ${what}${m.kind === 'heal' || m.kind === 'burst' ? '' : ' (hold Shift for a miss)'}. Esc to cancel.`, m.kind === 'burst' || m.kind === 'spell', p => {
@@ -135,10 +146,10 @@ export function templateFx(t: AreaTemplate, element: Element, casterId?: string)
 }
 
 // A player character's weapon attack, e.g. { name: 'Longbow', toHit: 5, damage: '1d8+3', notes: 'Piercing · 150/600 ft' }.
-export function pcAttack(c: { id: string; name: string }, a: { name: string; toHit?: number; damage?: string; notes?: string }) {
+export function pcAttack(c: { id: string; name: string }, a: { name: string; toHit?: number; damage?: string; notes?: string }, attackerId?: string) {
   const type = (a.notes ?? '').split('·')[0].trim();
   attack({
-    name: a.name, who: c.name, toHit: a.toHit ?? 0, charId: c.id,
+    name: a.name, who: c.name, toHit: a.toHit ?? 0, charId: c.id, attackerId,
     dmg: a.damage ? [{ dice: a.damage.replace(/\s/g, ''), type: type || 'damage' }] : [],
     desc: /\d+\/\d+ ?ft/.test(a.notes ?? '') ? 'Ranged Weapon Attack' : '',
   });

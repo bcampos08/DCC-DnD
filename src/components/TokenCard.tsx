@@ -6,6 +6,7 @@ import Conditions from './Conditions';
 import MonsterNotes from './MonsterNotes';
 import DeathSaves from './DeathSaves';
 import FxPicker from './FxPicker';
+import TokenAttacks from './TokenAttacks';
 import { findMonster } from '../lib/monsters';
 import { LIGHTS } from '../lib/vision';
 import { saveAsset } from '../lib/assets';
@@ -70,6 +71,7 @@ export default function TokenCard() {
       {speed && <div className="tc-speed" title="Movement speed">🏃 {speed}</div>}
       {t.charId && <DeathSaves charId={t.charId} />}
       <HpControl targets={targets} />
+      <TokenAttacks t={t} />
       {!t.charId && (
         <div className="row gap wrap small-fields">
           <label>HP <input type="number" value={t.hp} onChange={e => st.updateToken(sceneId, t.id, { hp: +e.target.value })} /></label>
