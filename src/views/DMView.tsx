@@ -74,7 +74,7 @@ export default function DMView() {
   // Lasting effects end on their own when their time or rounds run out.
   useEffect(() => {
     const t = setInterval(expireLasting, 1000);
-    const un = useCampaign.subscribe((a, b) => { if (a.encounter.round !== b.encounter.round || a.encounter.active !== b.encounter.active) expireLasting(); });
+    const un = useCampaign.subscribe((a, b) => { if (a.encounter.round !== b.encounter.round || a.encounter.turn !== b.encounter.turn || a.encounter.active !== b.encounter.active) expireLasting(); });
     return () => { clearInterval(t); un(); };
   }, []);
 
@@ -214,7 +214,7 @@ export default function DMView() {
               if (pe) {
                 ui.set({ pendingEffect: null, tool: 'select' });
                 const style = pe.style === 'wall' ? (pe.duration === 'instant' ? 'beam' : 'wall') : (pe.duration === 'instant' ? 'blast' : 'cone');
-                playTemplate(t, style, pe.element as Element, pe.duration, ui.selected[0], pe.label);
+                playTemplate(t, style, pe.element as Element, pe.duration, ui.selected[0], pe.label, pe.casterEntry);
                 return;
               }
               upd(s => { s.templates.push(t); });
@@ -257,7 +257,12 @@ export default function DMView() {
         </div>
         <aside className="side">
           <nav className="tabs">
-            {TABS.map(t => <button key={t.id} className={'tab' + (ui.tab === t.id ? ' on' : '')} onClick={() => ui.set({ tab: t.id })}>{t.label}{t.id === 'combat' && st.encounter.active ? ` · R${st.encounter.round}` : ''}</button>)}
+            {TABS.map(t => <button key={t.id} className={'tab' + (ui.tab === t.id ? ' on' : '')} onClick={() => {
+              ui.set({ tab: t.id });
+              // Combat tab during a fight: jump back to the scene the fight is on.
+              const e = st.encounter;
+              if (t.id === 'combat' && e.active && e.sceneId && e.sceneId !== st.activeSceneId && st.scenes.some(s => s.id === e.sceneId)) st.set(d => { d.activeSceneId = e.sceneId!; });
+            }}>{t.label}{t.id === 'combat' && st.encounter.active ? ` · R${st.encounter.round}` : ''}</button>)}
           </nav>
           <div className="tab-body">
             {ui.tab === 'combat' && <CombatPanel />}

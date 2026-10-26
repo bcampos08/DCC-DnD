@@ -3,6 +3,8 @@ import { useCampaign, creatureOf } from '../../store';
 import { useUI } from '../../ui';
 import { startCombat, sortEntries, rollInitFor, groupMonsters, nextTurn, initDex, isDefeated } from '../../lib/actions';
 import DeathSaves from '../DeathSaves';
+import FxPicker from '../FxPicker';
+import DiceText from '../DiceText';
 import { uid } from '../../lib/id';
 import { fmtMod } from '../../lib/dice';
 import HpControl, { HpBar } from '../HpControl';
@@ -79,6 +81,16 @@ export default function CombatPanel() {
           )}
           {e.charId && <DeathSaves charId={e.charId} compact />}
           {(one || toks.length > 1) && <HpControl compact targets={targets} />}
+          {!e.charId && !e.monsterId && !e.tokenIds.length && (
+            // Added entries (lair actions, traps...) get notes and an effect to play on their turn.
+            <details className="notes-box entry-extra" open={!!e.note || i === enc.turn}>
+              <summary>📝 Notes & effect{e.note ? '' : ''}</summary>
+              <textarea rows={2} value={e.note ?? ''} placeholder="What happens: e.g. the ceiling cracks, DC 15 Dex save or 2d10 bludgeoning"
+                onChange={ev => st.setEntries(l => { const x = l.find(y => y.id === e.id); if (x) x.note = ev.target.value || undefined; })} />
+              {e.note && <div className="desc sm"><DiceText text={e.note} who={e.name} label={e.name} /></div>}
+              <FxPicker entryId={e.id} />
+            </details>
+          )}
         </div>
         <button className="icon-btn" onClick={() => remove(e.id)} aria-label={`Remove ${e.name}`}>✕</button>
       </li>
@@ -87,6 +99,12 @@ export default function CombatPanel() {
 
   return (
     <div className="panel-col">
+      {enc.sceneId && enc.sceneId !== scene?.id && scenes.some(s => s.id === enc.sceneId) && (
+        <div className="callout row gap combat-elsewhere">
+          <span className="grow">This fight is on <b>{scenes.find(s => s.id === enc.sceneId)!.name}</b>.</span>
+          <button className="btn sm primary" onClick={() => st.set(d => { d.activeSceneId = enc.sceneId!; })}>Go to it</button>
+        </div>
+      )}
       <div className="combat-head">
         <div className="round">Round <b>{enc.round}</b></div>
         <button className="btn" onClick={() => nextTurn(-1)} aria-label="Previous turn">◀</button>

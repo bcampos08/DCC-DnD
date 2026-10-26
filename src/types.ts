@@ -158,6 +158,8 @@ export interface InitEntry {
   init: number | null;
   dex: number; // tie breaker
   monsterId?: string;
+  note?: string; // DM notes (for added entries like lair actions)
+  fxPick?: FxPick; // effect set up for this entry
 }
 
 export interface Encounter {
@@ -167,6 +169,7 @@ export interface Encounter {
   entries: InitEntry[];
   // Tokens players have seen during this fight. They stay in the players' turn order even if hidden again.
   seenTokens?: string[];
+  sceneId?: string; // where the fight is happening
 }
 
 export interface RollPart { dice: string; rolls: number[]; kept: boolean[]; sides: number }
@@ -253,4 +256,5 @@ export interface LastingFx {
   startedAt: number;
   endsAt?: number; // Date.now() when it stops (seconds-based)
   endsRound?: number; // combat round when it stops (rounds-based)
+  endsOnEntry?: string; // ...at the start of this initiative entry's turn (the caster's)
 }

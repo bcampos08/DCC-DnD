@@ -71,7 +71,7 @@ export function attack(spec: AttackSpec) {
   );
 }
 
-function resolveAttack(spec: AttackSpec, targetId: string, fxLook?: Pick<FxEvent, 'kind' | 'weapon' | 'missile' | 'element' | 'radius'>) {
+function resolveAttack(spec: AttackSpec, targetId: string, fxLook?: Pick<FxEvent, 'kind' | 'weapon' | 'missile' | 'element' | 'radius'>, fromPoint?: { x: number; y: number }) {
   const c = useCampaign.getState();
   const target = tokenOnScene(targetId);
   if (!target) return;
@@ -96,7 +96,7 @@ function resolveAttack(spec: AttackSpec, targetId: string, fxLook?: Pick<FxEvent
   // Hidden rolls never animate. Say so, so a missing animation isn't a mystery.
   if (r.hidden) { useUI.getState().toast('🙈 That roll was hidden, so nothing played on the TV.', makePublic); return; }
   if (c.activeSceneId !== c.tableSceneId) { useUI.getState().toast('No animation: the players are looking at a different scene.'); return; }
-  const from = attackerFor(spec, target);
+  const from = fromPoint ?? attackerFor(spec, target);
   if (!from) { useUI.getState().toast(`No animation: couldn't find ${spec.who}'s token on this scene.`); return; }
   const distSq = Math.hypot(from.x - target.x, from.y - target.y) / (c.scenes.find(s => s.id === c.activeSceneId)?.grid.size ?? 70);
   const look2 = fxLook ?? classifyAttack(spec.name, spec.desc ?? '', spec.dmg[0]?.type, distSq);
@@ -115,32 +115,42 @@ export type ManualFx =
   | { kind: 'cone' };
 
 // With `roll` filled in, the effect is a real attack: rolled against the target's AC, with hit/miss and damage.
-export function manualFx(sourceId: string, m: ManualFx, element: Element, roll?: { toHit: number; dice: string; label: string }) {
-  const src = tokenOnScene(sourceId);
-  if (!src) return;
+// Where an effect comes from: a token, or an initiative entry with no token (e.g. a lair action).
+export interface FxSource { tokenId?: string; entryId?: string; name: string }
+
+// With `roll` filled in, the effect is a real attack: rolled against the target's AC, with hit/miss and damage.
+export function manualFx(source: FxSource, m: ManualFx, element: Element, roll?: { toHit: number; dice: string; label: string }) {
+  const tok = source.tokenId ? tokenOnScene(source.tokenId) : undefined;
+  if (source.tokenId && !tok) return;
+  const c = useCampaign.getState();
+  const g = c.scene()?.grid;
+  const gs = g?.size ?? 70;
+  // Without a token, missiles and bolts come down from above the target.
+  const fromFor = (to: { x: number; y: number }) => (tok ? { x: tok.x, y: tok.y, id: tok.id } : { x: to.x - gs * 1.2, y: to.y - gs * 6 });
+  const casterEntry = source.entryId ?? entryForToken(tok?.id);
   if (roll && (m.kind === 'melee' || m.kind === 'missile' || m.kind === 'spell')) {
-    const c = useCampaign.getState();
-    const who = creatureOf(src, c.characters).name;
-    const spec: AttackSpec = { name: roll.label, who, toHit: roll.toHit, dmg: roll.dice ? [{ dice: roll.dice, type: element === 'physical' ? 'damage' : element }] : [], attackerId: src.id };
+    const who = tok ? creatureOf(tok, c.characters).name : source.name;
+    const spec: AttackSpec = { name: roll.label, who, toHit: roll.toHit, dmg: roll.dice ? [{ dice: roll.dice, type: element === 'physical' ? 'damage' : element }] : [], attackerId: tok?.id };
     const look = { kind: m.kind === 'melee' ? 'melee' : 'missile', weapon: m.kind === 'melee' ? m.weapon : undefined, missile: m.kind === 'melee' ? undefined : m.missile, element } as Pick<FxEvent, 'kind' | 'weapon' | 'missile' | 'element'>;
-    const g = c.scene()?.grid;
     if (m.kind === 'spell' && m.radiusFt && g) (look as FxEvent).radius = (m.radiusFt / g.feet) * g.size;
     startTargeting(`🎯 Click the target of ${who}'s ${roll.label}. Esc rolls without a target.`, false,
-      p => { if (!p.tokenId) return false; resolveAttack(spec, p.tokenId, look); if (m.kind === 'spell') lingerAfter(src, p, m, element); },
+      p => { if (!p.tokenId) return false; resolveAttack(spec, p.tokenId, look, tok ? undefined : fromFor(p)); if (m.kind === 'spell') lingerAfter(fromFor(p), p, m, element, casterEntry); },
       () => rollAttack(spec.name, spec.who, spec.toHit, spec.dmg), true);
     return;
   }
-  if (m.kind === 'poof') { playFx({ kind: 'poof', to: { x: src.x, y: src.y }, element: 'physical' }); return; }
-  const what = m.kind === 'heal' ? 'who gets healed' : m.kind === 'burst' ? 'where it explodes' : 'the target';
-  startTargeting(`🎬 Click ${what}${m.kind === 'heal' || m.kind === 'burst' ? '' : ' (hold Shift for a miss)'}. Esc to cancel.`, m.kind === 'burst' || m.kind === 'spell', p => {
+  if (m.kind === 'poof' && tok) { playFx({ kind: 'poof', to: { x: tok.x, y: tok.y }, element: 'physical' }); return; }
+  const what = m.kind === 'heal' ? 'who gets healed' : m.kind === 'burst' ? 'where it explodes' : m.kind === 'poof' ? 'where the smoke appears' : 'the target';
+  const point = m.kind === 'burst' || m.kind === 'spell' || m.kind === 'poof' || !tok;
+  startTargeting(`🎬 Click ${what}${m.kind === 'heal' || m.kind === 'burst' || m.kind === 'poof' ? '' : ' (hold Shift for a miss)'}. Esc to cancel.`, point, p => {
     const to = { x: p.x, y: p.y };
+    const from = fromFor(to);
     const result = m.kind === 'heal' || m.kind === 'burst' ? undefined : p.shift ? 'miss' : 'hit';
-    const g = useCampaign.getState().scene()?.grid;
-    if (m.kind === 'melee') playFx({ kind: 'melee', weapon: m.weapon, from: src, to, element, result });
-    else if (m.kind === 'missile') playFx({ kind: 'missile', missile: m.missile, from: src, to, element, result });
-    else if (m.kind === 'spell') { playFx({ kind: 'missile', missile: m.missile, from: src, to, element, result, radius: m.radiusFt && g ? (m.radiusFt / g.feet) * g.size : undefined }); lingerAfter(src, to, m, element); }
-    else if (m.kind === 'burst') playFx({ kind: 'burst', from: src, to, element, radius: g ? (m.radiusFt / g.feet) * g.size : 280 });
+    if (m.kind === 'melee') playFx({ kind: 'melee', weapon: m.weapon, from, to, element, result });
+    else if (m.kind === 'missile') playFx({ kind: 'missile', missile: m.missile, from, to, element, result });
+    else if (m.kind === 'spell') { playFx({ kind: 'missile', missile: m.missile, from, to, element, result, radius: m.radiusFt && g ? (m.radiusFt / g.feet) * g.size : undefined }); lingerAfter(from, to, m, element, casterEntry); }
+    else if (m.kind === 'burst') playFx({ kind: 'burst', from: tok ? from : undefined, to, element, radius: g ? (m.radiusFt / g.feet) * g.size : 280 });
     else if (m.kind === 'heal') playFx({ kind: 'heal', to, element: 'radiant' });
+    else if (m.kind === 'poof') playFx({ kind: 'poof', to, element: 'physical' });
   });
 }
 
@@ -175,12 +185,24 @@ export const DURATIONS: { id: string; label: string }[] = [
 ];
 
 // Rounds count down during combat; outside combat they last until ended by hand.
-export function addLasting(e: Omit<LastingFx, 'id' | 'startedAt' | 'endsAt' | 'endsRound'>, duration: string, sceneId = useCampaign.getState().activeSceneId) {
+// The initiative entry a token belongs to (its own, its character's, or its group's).
+export function entryForToken(tokenId?: string) {
+  if (!tokenId) return undefined;
+  const c = useCampaign.getState();
+  const t = c.scenes.flatMap(s => s.tokens).find(x => x.id === tokenId);
+  return c.encounter.entries.find(e => e.tokenIds.includes(tokenId) || (t?.charId && e.charId === t.charId))?.id;
+}
+
+// Rounds-based effects end at the start of the caster's turn that many rounds later.
+export function addLasting(e: Omit<LastingFx, 'id' | 'startedAt' | 'endsAt' | 'endsRound' | 'endsOnEntry'>, duration: string, sceneId = useCampaign.getState().activeSceneId, casterEntryId?: string) {
   if (duration === 'instant') return;
   const c = useCampaign.getState();
   const fx: LastingFx = { ...e, id: uid(), startedAt: Date.now() };
   if (duration.startsWith('s')) fx.endsAt = Date.now() + parseInt(duration.slice(1), 10) * 1000;
-  if (duration.startsWith('r') && c.encounter.active) fx.endsRound = c.encounter.round + parseInt(duration.slice(1), 10);
+  if (duration.startsWith('r') && c.encounter.active) {
+    fx.endsRound = c.encounter.round + parseInt(duration.slice(1), 10);
+    fx.endsOnEntry = casterEntryId ?? c.encounter.entries[c.encounter.turn]?.id;
+  }
   c.updateScene(sceneId, s => { s.effects = [...(s.effects ?? []), fx]; }, false);
   if (fxOn() && sceneId === c.tableSceneId && c.settings.fxSound !== false) {
     const sc = c.scenes.find(s => s.id === sceneId)!;
@@ -199,20 +221,29 @@ export function endLasting(id: string) {
 export function expireLasting() {
   const c = useCampaign.getState(), now = Date.now();
   for (const s of c.scenes) {
-    const keep = (s.effects ?? []).filter(e => !(e.endsAt && e.endsAt < now) && !(e.endsRound && c.encounter.active && c.encounter.round >= e.endsRound));
+    const enc = c.encounter;
+    const roundsUp = (e: LastingFx) => {
+      if (!e.endsRound || !enc.active) return false;
+      if (enc.round > e.endsRound) return true;
+      if (enc.round < e.endsRound) return false;
+      const at = enc.entries.findIndex(x => x.id === e.endsOnEntry);
+      return at < 0 || enc.turn >= at; // the caster's turn has come round again
+    };
+    const keep = (s.effects ?? []).filter(e => !(e.endsAt && e.endsAt < now) && !roundsUp(e));
     if (keep.length !== (s.effects ?? []).length) c.updateScene(s.id, x => { x.effects = keep; }, false);
   }
 }
 
 // A spell bolt that leaves something burning (or freezing...) where it lands.
-function lingerAfter(from: { x: number; y: number }, to: { x: number; y: number }, m: Extract<ManualFx, { kind: 'spell' }>, element: Element) {
+function lingerAfter(from: { x: number; y: number }, to: { x: number; y: number }, m: Extract<ManualFx, { kind: 'spell' }>, element: Element, casterEntry?: string) {
   if (!m.linger || m.linger === 'instant') return;
   const g = useCampaign.getState().scene()?.grid;
   if (!g) return;
   const r = Math.max(g.size * 0.5, ((m.radiusFt ?? 0) / g.feet) * g.size);
   const travel = timeline({ id: '', sceneId: '', at: 0, kind: 'missile', missile: m.missile, from, to, element, grid: g.size }).travel;
   const sceneId = useCampaign.getState().activeSceneId;
-  setTimeout(() => addLasting({ kind: 'area', label: `${element[0].toUpperCase() + element.slice(1)} (spell)`, element, x: to.x, y: to.y, r }, m.linger!, sceneId), travel);
+  const caster = (from as { id?: string }).id ? entryForToken((from as { id?: string }).id) : undefined;
+  setTimeout(() => addLasting({ kind: 'area', label: `${element[0].toUpperCase() + element.slice(1)} (spell)`, element, x: to.x, y: to.y, r }, m.linger!, sceneId, casterEntry ?? caster), travel);
 }
 
 // Turns an area template into a spell effect: instant (explosion, blast, beam) or lasting.
@@ -224,16 +255,17 @@ export function templateStyles(shape: AreaTemplate['shape']): { id: TemplateStyl
   return [{ id: 'beam', label: 'Beam / bolt', lasting: false }, { id: 'wall', label: 'Wall', lasting: true }];
 }
 
-export function playTemplate(t: AreaTemplate, style: TemplateStyle, element: Element, duration: string, casterId?: string, label?: string) {
+export function playTemplate(t: AreaTemplate, style: TemplateStyle, element: Element, duration: string, casterId?: string, label?: string, casterEntry?: string) {
   const sc = useCampaign.getState().scene();
   if (!sc) return;
   const L = (t.feet / sc.grid.feet) * sc.grid.size;
   const name = label ?? `${element[0].toUpperCase() + element.slice(1)} ${style === 'ring' ? 'ring' : style === 'wall' ? 'wall' : style === 'cone' ? 'cone' : 'area'}`;
   if (style === 'burst' || style === 'blast' || style === 'beam') { templateFx(t, element, casterId); return; }
-  if (style === 'wall') addLasting({ kind: 'wall', label: name, element, x: t.x, y: t.y, angle: t.angle, length: L }, duration);
-  else if (style === 'cone') addLasting({ kind: 'cone', label: name, element, x: t.x, y: t.y, angle: t.angle, length: L }, duration);
-  else if (t.shape === 'cube') { const q = cubeRect(t, sc.grid); addLasting({ kind: 'area', label: name, element, x: q.x + q.w / 2, y: q.y + q.h / 2, r: L * 0.56 }, duration); }
-  else addLasting({ kind: style === 'ring' ? 'ring' : 'area', label: name, element, x: t.x, y: t.y, r: L }, duration);
+  const ce = casterEntry ?? entryForToken(casterId);
+  if (style === 'wall') addLasting({ kind: 'wall', label: name, element, x: t.x, y: t.y, angle: t.angle, length: L }, duration, undefined, ce);
+  else if (style === 'cone') addLasting({ kind: 'cone', label: name, element, x: t.x, y: t.y, angle: t.angle, length: L }, duration, undefined, ce);
+  else if (t.shape === 'cube') { const q = cubeRect(t, sc.grid); addLasting({ kind: 'area', label: name, element, x: q.x + q.w / 2, y: q.y + q.h / 2, r: L * 0.56 }, duration, undefined, ce); }
+  else addLasting({ kind: style === 'ring' ? 'ring' : 'area', label: name, element, x: t.x, y: t.y, r: L }, duration, undefined, ce);
 }
 
 export { elementOf };

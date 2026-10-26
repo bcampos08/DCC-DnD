@@ -12,7 +12,12 @@ export default function EffectsBar() {
   if (!effects.length) return null;
   const left = (e: (typeof effects)[number]) => {
     if (e.endsAt) return `${Math.max(0, Math.ceil((e.endsAt - Date.now()) / 1000))}s`;
-    if (e.endsRound) return enc.active ? `${Math.max(0, e.endsRound - enc.round)} rd` : 'paused';
+    if (e.endsRound) {
+      if (!enc.active) return 'paused';
+      const who = enc.entries.find(x => x.id === e.endsOnEntry)?.name;
+      const n = Math.max(0, e.endsRound - enc.round);
+      return who ? `ends on ${who}'s turn${n ? `, ${n} rd` : ''}` : `${n} rd`;
+    }
     return 'until ended';
   };
   return (

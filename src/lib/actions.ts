@@ -74,6 +74,12 @@ export function addCharacterToken(c: Character) {
   const t: Token = { id: uid(), name: c.name, x: p.x, y: p.y, size: 1, color: c.color, kind: 'pc', charId: c.id, hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: c.ac, conditions: [] };
   const op = revealOp(sc, t, c, p, p);
   st.updateScene(sc.id, s => { s.tokens.push(t); if (op) s.fog.ops.push(op); });
+  // Placed mid-fight: link the token to the character's initiative entry, or add one.
+  if (st.encounter.active) st.setEntries(e => {
+    const ent = e.find(x => x.charId === c.id);
+    if (ent) ent.tokenIds.push(t.id);
+    else e.push({ id: uid(), name: c.name, tokenIds: [t.id], charId: c.id, init: null, dex: c.initBonus });
+  });
 }
 
 export function findToken(id: string) {
@@ -152,7 +158,7 @@ export function startCombat() {
     const m = findMonster(t.monsterId);
     entries.push({ id: uid(), name: t.name, tokenIds: [t.id], init: null, dex: m ? modOf(m.abilities.dex) : 0, monsterId: t.monsterId });
   }
-  st.set(d => { d.encounter = { active: true, round: 1, turn: 0, entries }; });
+  st.set(d => { d.encounter = { active: true, round: 1, turn: 0, entries, sceneId: sc.id }; });
 }
 
 export function sortEntries() {

@@ -515,6 +515,17 @@ export function drawLasting(ctx: Ctx, e: LastingFx, now: number, g: number, ligh
     });
     if (el === 'fire') pts.forEach((p, i) => { if (i % 4 === 0) glow(ctx, p.x, p.y, g * 0.3, '#fef3c7', '#f97316', A * 0.6); });
   }
+  // Thin outline so the area's edge is easy to see.
+  if (e.kind !== 'wall') {
+    ctx.globalAlpha = A * 0.9; ctx.strokeStyle = outer; ctx.lineWidth = Math.max(1.5, g * 0.035);
+    ctx.beginPath();
+    if (e.kind === 'cone') {
+      const a = e.angle ?? 0, l = (e.length ?? g * 3) / Math.cos(Math.atan(0.5));
+      ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + Math.cos(a - Math.atan(0.5)) * l, e.y + Math.sin(a - Math.atan(0.5)) * l);
+      ctx.lineTo(e.x + Math.cos(a + Math.atan(0.5)) * l, e.y + Math.sin(a + Math.atan(0.5)) * l); ctx.closePath();
+    } else ctx.arc(e.x, e.y, e.r ?? g * 2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 
   if (EMITS_LIGHT.includes(el)) {

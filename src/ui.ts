@@ -35,7 +35,7 @@ interface UI {
   fx: FxEvent[]; // animations running on the DM's own map
   selectedDrawing: string | null;
   // Next area template drawn becomes this spell effect instead (from the token card's Wall / Cone).
-  pendingEffect: { style: 'wall' | 'cone'; element: string; duration: string; label: string } | null;
+  pendingEffect: { style: 'wall' | 'cone'; element: string; duration: string; label: string; casterEntry?: string } | null;
   toasts: { id: number; text: string; action?: { label: string; run: () => void } }[];
   set: (p: Partial<UI> | ((s: UI) => Partial<UI>)) => void;
   toast: (text: string, action?: { label: string; run: () => void }) => void;

@@ -87,6 +87,15 @@ export default function MapCanvas(p: Props) {
   if (!p.fx?.length && !scene.effects?.length) lightsRef.current = []; // nothing running: close any light holes in the fog
   const fogLayer = useRef<Konva.Layer>(null);
   const dimLayer = useRef<Konva.Layer>(null);
+  const fillsLayer = useRef<Konva.Layer>(null);
+  // See-through layers are drawn solid and faded as a whole (CSS opacity on the layer's canvas),
+  // so overlapping fog strokes, areas and filled shapes never stack up darker.
+  useEffect(() => {
+    const fade = (l: Konva.Layer | null, a: number) => { const el = l?.getCanvas()._canvas; if (el) el.style.opacity = String(a); };
+    fade(fillsLayer.current, 0.3);
+    fade(fogLayer.current, dm ? 0.5 : 1);
+    fade(dimLayer.current, dm ? 0.3 : 0.62);
+  });
   // Where a shape-tool press started: on a token (and which), and the screen point, to tell clicks from drags.
   const press = useRef<{ tokenId?: string; sx: number; sy: number } | null>(null);
 
@@ -332,6 +341,15 @@ export default function MapCanvas(p: Props) {
         )}
       </Layer>
 
+      {/* Fills for areas and filled shapes, drawn solid in one layer that is then made see-through,
+          so overlapping shapes don't stack up darker and darker. */}
+      <Layer ref={fillsLayer} listening={false}>
+        {visibleDrawings.map(d => <DrawingFill key={d.id} d={d} />)}
+        {scene.templates.map(t => <TemplateFill key={t.id} t={t} scene={scene} W={W} H={H} />)}
+        {draft?.k === 'tpl' && <TemplateFill t={draft.t} scene={scene} W={W} H={H} />}
+        {draft?.k === 'shape' && p.drawStyle?.fill && draft.t === 'rect' && <Rect x={Math.min(draft.x0, draft.x1)} y={Math.min(draft.y0, draft.y1)} width={Math.abs(draft.x1 - draft.x0)} height={Math.abs(draft.y1 - draft.y0)} fill={p.drawStyle.color} />}
+        {draft?.k === 'shape' && p.drawStyle?.fill && draft.t === 'circle' && <Circle x={draft.x0} y={draft.y0} radius={Math.hypot(draft.x1 - draft.x0, draft.y1 - draft.y0)} fill={p.drawStyle.color} />}
+      </Layer>
       <Layer>
         {visibleDrawings.map(d => (
           <DrawingNode key={d.id} d={d} erase={dm && tool === 'erase'} selectable={dm && tool === 'select' && !p.targeting} selected={p.selectedDrawing === d.id}
@@ -346,8 +364,8 @@ export default function MapCanvas(p: Props) {
         {draft?.k === 'tpl' && <TemplateNode t={draft.t} scene={scene} W={W} H={H} dm={dm} tool={tool} selected preview />}
         {draft?.k === 'pen' && <Line points={draft.pts} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} lineCap="round" lineJoin="round" tension={0.3} listening={false} />}
         {draft?.k === 'shape' && draft.t === 'line' && <Line points={[draft.x0, draft.y0, draft.x1, draft.y1]} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} lineCap="round" listening={false} />}
-        {draft?.k === 'shape' && draft.t === 'rect' && <Rect x={Math.min(draft.x0, draft.x1)} y={Math.min(draft.y0, draft.y1)} width={Math.abs(draft.x1 - draft.x0)} height={Math.abs(draft.y1 - draft.y0)} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} fill={p.drawStyle!.fill ? p.drawStyle!.color + '55' : undefined} listening={false} />}
-        {draft?.k === 'shape' && draft.t === 'circle' && <Circle x={draft.x0} y={draft.y0} radius={Math.hypot(draft.x1 - draft.x0, draft.y1 - draft.y0)} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} fill={p.drawStyle!.fill ? p.drawStyle!.color + '55' : undefined} listening={false} />}
+        {draft?.k === 'shape' && draft.t === 'rect' && <Rect x={Math.min(draft.x0, draft.x1)} y={Math.min(draft.y0, draft.y1)} width={Math.abs(draft.x1 - draft.x0)} height={Math.abs(draft.y1 - draft.y0)} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} listening={false} />}
+        {draft?.k === 'shape' && draft.t === 'circle' && <Circle x={draft.x0} y={draft.y0} radius={Math.hypot(draft.x1 - draft.x0, draft.y1 - draft.y0)} stroke={p.drawStyle!.color} strokeWidth={p.drawStyle!.width} listening={false} />}
       </Layer>
 
       <Layer>
@@ -368,12 +386,12 @@ export default function MapCanvas(p: Props) {
       )}
       {scene.fog.enabled && p.vision && (
         // Explored but not currently seen: dimmed. Clear only inside current sight or areas the DM revealed by hand.
-        <Layer ref={dimLayer} listening={false} opacity={dm ? 0.3 : 0.62}>
+        <Layer ref={dimLayer} listening={false}>
           <FogShape ops={scene.fog.ops.filter(o => !o.auto)} cut={p.vision} lights={lightsRef} />
         </Layer>
       )}
       {scene.fog.enabled && (
-        <Layer ref={fogLayer} listening={false} opacity={dm ? 0.5 : 1}>
+        <Layer ref={fogLayer} listening={false}>
           <FogShape lights={lightsRef} ops={draft?.k === 'brush' ? [...scene.fog.ops, { t: 'brush', mode: draft.mode, r: (p.drawStyle?.brush ?? 1.5) * g.size, pts: draft.pts }] : scene.fog.ops} />
         </Layer>
       )}
@@ -552,8 +570,8 @@ function DrawingNode({ d, erase, selectable, selected, onRemove, onSelect, onCha
   let shape: React.ReactNode;
   if (d.t === 'pen') shape = <Line {...common} points={d.pts} stroke={d.color} strokeWidth={d.width} lineCap="round" lineJoin="round" tension={0.3} />;
   else if (d.t === 'line') shape = <Line {...common} points={d.pts} stroke={d.color} strokeWidth={d.width} lineCap="round" />;
-  else if (d.t === 'rect') shape = <Rect {...common} x={d.x} y={d.y} width={d.w} height={d.h} stroke={d.color} strokeWidth={d.width} fill={d.fill ? d.color + '55' : undefined} />;
-  else if (d.t === 'circle') shape = <Circle {...common} x={d.x} y={d.y} radius={d.r} stroke={d.color} strokeWidth={d.width} fill={d.fill ? d.color + '55' : undefined} />;
+  else if (d.t === 'rect') shape = <Rect {...common} x={d.x} y={d.y} width={d.w} height={d.h} stroke={d.color} strokeWidth={d.width} fill={d.fill ? 'rgba(0,0,0,0)' : undefined} />;
+  else if (d.t === 'circle') shape = <Circle {...common} x={d.x} y={d.y} radius={d.r} stroke={d.color} strokeWidth={d.width} fill={d.fill ? 'rgba(0,0,0,0)' : undefined} />;
   else shape = <Text x={d.x} y={d.y} text={d.text} fontSize={d.size} fill={d.color} fontStyle="bold" stroke="#000" strokeWidth={d.size / 30} opacity={d.dmOnly ? 0.7 : 1} />;
   return (
     <Group id={'draw-' + d.id} x={tf.x} y={tf.y} rotation={tf.rot} scaleX={tf.sx} scaleY={tf.sy}
@@ -561,9 +579,52 @@ function DrawingNode({ d, erase, selectable, selected, onRemove, onSelect, onCha
       onMouseDown={e => { if (selectable) { e.cancelBubble = true; if (!selected) onSelect(); } }}
       onClick={() => erase && onRemove()} onTap={() => erase && onRemove()}
       onDragStart={() => { if (!selected) onSelect(); }}
+      onDragMove={e => syncFill(e.target, 'drawfill-' + d.id)} onTransform={e => syncFill(e.target, 'drawfill-' + d.id)}
       onDragEnd={e => onChange(readTf(e.target))} onTransformEnd={e => onChange(readTf(e.target))}>
       {shape}
     </Group>
+  );
+}
+
+// Keeps a shape's fill (in the fills layer) lined up while its outline is being dragged or resized.
+function syncFill(n: Konva.Node, fillId: string) {
+  const f = n.getStage()?.findOne('#' + fillId);
+  if (!f) return;
+  f.setAttrs({ x: n.x(), y: n.y(), rotation: n.rotation(), scaleX: n.scaleX(), scaleY: n.scaleY() });
+  f.getLayer()?.batchDraw();
+}
+
+function DrawingFill({ d }: { d: Drawing }) {
+  if ((d.t !== 'rect' && d.t !== 'circle') || !d.fill) return null;
+  const tf = d.tf ?? { x: 0, y: 0, rot: 0, sx: 1, sy: 1 };
+  return (
+    <Group id={'drawfill-' + d.id} x={tf.x} y={tf.y} rotation={tf.rot} scaleX={tf.sx} scaleY={tf.sy}>
+      {d.t === 'rect' ? <Rect x={d.x} y={d.y} width={d.w} height={d.h} fill={d.color} /> : <Circle x={d.x} y={d.y} radius={d.r} fill={d.color} />}
+    </Group>
+  );
+}
+
+function templateShape(t: AreaTemplate, g: Scene['grid'], props: Record<string, unknown>) {
+  const L = (t.feet / g.feet) * g.size;
+  if (t.shape === 'circle') return <Circle radius={L} {...props} />;
+  if (t.shape === 'cone') {
+    const a1 = t.angle - CONE_HALF, a2 = t.angle + CONE_HALF, l = L / Math.cos(CONE_HALF);
+    return <Line points={[0, 0, Math.cos(a1) * l, Math.sin(a1) * l, Math.cos(a2) * l, Math.sin(a2) * l]} closed {...props} />;
+  }
+  if (t.shape === 'line') return <Rect x={0} y={-g.size / 2} width={L} height={g.size} rotation={(t.angle * 180) / Math.PI} {...props} />;
+  const q = cubeRect(t, g);
+  return <Rect x={q.x - t.x} y={q.y - t.y} width={q.w} height={q.h} {...props} />;
+}
+
+// The highlighted squares and the area itself, drawn solid (the fills layer makes them see-through).
+function TemplateFill({ t, scene, W, H }: { t: AreaTemplate; scene: Scene; W: number; H: number }) {
+  const g = scene.grid;
+  const cells = useMemo(() => templateCells(t, g, W, H), [t, g, W, H]);
+  return (
+    <>
+      {cells.map(([c, r]) => <Rect key={c + ',' + r} x={c * g.size + g.offsetX} y={r * g.size + g.offsetY} width={g.size} height={g.size} fill={t.color} />)}
+      <Group id={'tplfill-' + t.id} x={t.x} y={t.y}>{templateShape(t, g, { fill: t.color })}</Group>
+    </>
   );
 }
 
@@ -587,19 +648,9 @@ function TemplateNode({ t, scene, W, H, dm, tool, selected, preview, onSelect, o
 }) {
   const g = scene.grid;
   const L = (t.feet / g.feet) * g.size;
-  const cells = useMemo(() => templateCells(t, g, W, H), [t, g, W, H]);
-  const fill = t.color + '33';
-  let shape: React.ReactNode = null;
-  if (t.shape === 'circle') shape = <Circle radius={L} stroke={t.color} strokeWidth={3} fill={fill} />;
-  else if (t.shape === 'cone') {
-    const a1 = t.angle - CONE_HALF, a2 = t.angle + CONE_HALF, l = L / Math.cos(CONE_HALF);
-    shape = <Line points={[0, 0, Math.cos(a1) * l, Math.sin(a1) * l, Math.cos(a2) * l, Math.sin(a2) * l]} closed stroke={t.color} strokeWidth={3} fill={fill} />;
-  } else if (t.shape === 'line') {
-    shape = <Rect x={0} y={-g.size / 2} width={L} height={g.size} rotation={(t.angle * 180) / Math.PI} stroke={t.color} strokeWidth={3} fill={fill} />;
-  } else if (t.shape === 'cube') {
-    const q = cubeRect(t, g);
-    shape = <Rect x={q.x - t.x} y={q.y - t.y} width={q.w} height={q.h} stroke={t.color} strokeWidth={3} fill={fill} />;
-  }
+  // Outline only (with an invisible fill so it can be clicked); the fill lives in the fills layer.
+  const shape = templateShape(t, g, { stroke: t.color, strokeWidth: 3, fill: 'rgba(0,0,0,0)' });
+  void W; void H;
   const canDrag = dm && tool === 'select' && !preview;
   // Resize/aim handle: the tip of a cone or line, the edge of a sphere, the far corner of a cube.
   const tip = t.shape === 'cube'
@@ -611,11 +662,11 @@ function TemplateNode({ t, scene, W, H, dm, tool, selected, preview, onSelect, o
   };
   return (
     <>
-      {cells.map(([c, r]) => <Rect key={c + ',' + r} listening={false} x={c * g.size + g.offsetX} y={r * g.size + g.offsetY} width={g.size} height={g.size} fill={t.color} opacity={0.22} />)}
       <Group x={t.x} y={t.y} draggable={canDrag} listening={dm && !preview && (tool === 'select' || tool === 'erase')}
         onMouseDown={e => { if (tool === 'select') { e.cancelBubble = true; onSelect?.(); } }}
         onClick={() => tool === 'erase' && onRemove?.()}
         onDblClick={() => onRemove?.()}
+        onDragMove={e => { if (e.target === e.currentTarget) syncFill(e.target, 'tplfill-' + t.id); }}
         onDragEnd={e => { if (e.target !== e.currentTarget) return; const x = e.target.x(), y = e.target.y(); e.target.position({ x: t.x, y: t.y }); onMove?.(x, y); }}>
         {shape}
         <Circle radius={6} fill={t.color} stroke={selected ? '#fff' : '#000'} strokeWidth={2} />
