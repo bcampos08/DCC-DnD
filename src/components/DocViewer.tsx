@@ -13,6 +13,8 @@ export default function DocViewer() {
   const editor = useRef<HTMLDivElement>(null);
   const timer = useRef(0);
   const close = () => useUI.getState().set({ openDoc: null });
+  // Text files: the page grows with the text instead of scrolling inside a box.
+  const grow = (el: HTMLTextAreaElement | null) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } };
 
   useEffect(() => {
     if (!doc || (doc.kind !== 'pdf' && doc.kind !== 'image' && doc.kind !== 'other')) { setUrl(null); return; }
@@ -29,7 +31,7 @@ export default function DocViewer() {
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, []);
-  useEffect(() => { try { localStorage.setItem('dcc.docZoom', String(zoom)); } catch { /* ignore */ } }, [zoom]);
+  useEffect(() => { try { localStorage.setItem('dcc.docZoom', String(zoom)); } catch { /* ignore */ } grow(document.querySelector('.dv-text')); }, [zoom, id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!id) return null;
   if (!doc) return null;
@@ -83,7 +85,7 @@ export default function DocViewer() {
         )}
         {doc.kind === 'text' && (
           <div className="dv-page" style={{ fontSize: `${zoom * 1.05}rem` }}>
-            <textarea key={doc.id} className="dv-text" defaultValue={doc.text ?? ''} spellCheck onChange={e => save({ text: e.target.value })} />
+            <textarea key={doc.id} ref={grow} className="dv-text" defaultValue={doc.text ?? ''} spellCheck onChange={e => { save({ text: e.target.value }); grow(e.target); }} />
           </div>
         )}
         {doc.kind === 'other' && (
