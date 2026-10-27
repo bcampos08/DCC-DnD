@@ -21,7 +21,7 @@ function defaultCampaign(): Campaign {
     characters: [], encounter: { active: false, round: 1, turn: 0, entries: [] },
     rolls: [], partyLoot: [], customMonsters: [],
     settings: { diagonal: '5', showMonsterNames: true, partyLevel: 1 },
-    monsterNotes: {}, notes: [], sceneFolders: [],
+    monsterNotes: {}, notes: [], sceneFolders: [], docs: [],
   };
 }
 
@@ -98,7 +98,7 @@ export const campaignData = (): Campaign => {
   return {
     name: s.name, scenes: s.scenes, activeSceneId: s.activeSceneId, tableSceneId: s.tableSceneId, characters: s.characters,
     encounter: s.encounter, rolls: s.rolls, partyLoot: s.partyLoot, customMonsters: s.customMonsters, settings: s.settings,
-    monsterNotes: s.monsterNotes, notes: s.notes, sceneFolders: s.sceneFolders,
+    monsterNotes: s.monsterNotes, notes: s.notes, sceneFolders: s.sceneFolders, docs: s.docs,
   };
 };
 

@@ -57,6 +57,7 @@ function assetKeys(c: Campaign) {
     if (s.map?.src.startsWith('asset:')) keys.add(s.map.src);
     for (const t of s.tokens) if (t.image?.startsWith('asset:')) keys.add(t.image);
   }
+  for (const d of c.docs ?? []) keys.add(d.asset);
   return [...keys];
 }
 const objName = (uid: string, key: string) => `${uid}/${key.slice('asset:'.length)}`;
@@ -83,7 +84,7 @@ export async function saveToCloud(progress: (msg: string) => void) {
       progress(`Uploading images ${++i} of ${missing.length}…`);
       const blob = await getAssetBlob(k);
       if (!blob) continue;
-      const { error } = await supabase.storage.from(BUCKET).upload(objName(user.id, k), blob, { upsert: true, contentType: blob.type || 'image/png' });
+      const { error } = await supabase.storage.from(BUCKET).upload(objName(user.id, k), blob, { upsert: true, contentType: blob.type || 'application/octet-stream' });
       if (error && !/exists/i.test(error.message)) throw new Error(friendly(error.message));
     }
   }
@@ -135,6 +136,6 @@ useCampaign.subscribe((s, prev) => {
   if (!useCampaign.persist.hasHydrated()) return; // loading saved data on startup
   if (suspended) return;
   // Roll log entries alone don't count as unsaved work.
-  if (s.scenes === prev.scenes && s.characters === prev.characters && s.partyLoot === prev.partyLoot && s.customMonsters === prev.customMonsters && s.encounter === prev.encounter && s.settings === prev.settings && s.name === prev.name && s.notes === prev.notes && s.monsterNotes === prev.monsterNotes && s.sceneFolders === prev.sceneFolders) return;
+  if (s.scenes === prev.scenes && s.characters === prev.characters && s.partyLoot === prev.partyLoot && s.customMonsters === prev.customMonsters && s.encounter === prev.encounter && s.settings === prev.settings && s.name === prev.name && s.notes === prev.notes && s.monsterNotes === prev.monsterNotes && s.sceneFolders === prev.sceneFolders && s.docs === prev.docs) return;
   if (!dirty) setDirty(true);
 });

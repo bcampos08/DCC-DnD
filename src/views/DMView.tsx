@@ -12,6 +12,9 @@ import LootPanel from '../components/panels/LootPanel';
 import ScenesPanel from '../components/panels/ScenesPanel';
 import LogPanel from '../components/panels/LogPanel';
 import NotesPanel from '../components/panels/NotesPanel';
+import DocsPanel from '../components/panels/DocsPanel';
+import DocViewer from '../components/DocViewer';
+import { importDocs } from '../lib/docs';
 import { useCampaign, creatureOf, campaignData } from '../store';
 import { useUI, type Tab } from '../ui';
 import { channel, send, tableState, type Measure, type Ping } from '../lib/sync';
@@ -29,7 +32,7 @@ import { nextTurn } from '../lib/actions';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'combat', label: '⚔ Combat' }, { id: 'monsters', label: '🐉 Monsters' }, { id: 'party', label: '🛡 Party' },
-  { id: 'loot', label: '💰 Loot' }, { id: 'scenes', label: '🗺 Scenes' }, { id: 'notes', label: '📝 Notes' }, { id: 'log', label: '🎲 Log' },
+  { id: 'loot', label: '💰 Loot' }, { id: 'scenes', label: '🗺 Scenes' }, { id: 'notes', label: '📝 Notes' }, { id: 'docs', label: '📄 Docs' }, { id: 'log', label: '🎲 Log' },
 ];
 
 export function fitCamera(scene: Scene, w: number, h: number): Camera {
@@ -158,8 +161,26 @@ export default function DMView() {
   const drawStyle = { color: ui.color, width: ui.strokeWidth, fill: ui.fillShapes, dmOnly: ui.dmOnlyDraw, brush: ui.brush, tplColor: ui.tplColor };
   const upd = (fn: (s: Scene) => void) => st.updateScene(scene.id, fn);
 
+  // Files dragged anywhere onto the DM screen go into the Docs tab.
+  const [fileOver, setFileOver] = useState(false);
+  useEffect(() => {
+    const hasFiles = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+    const over = (e: DragEvent) => { if (!hasFiles(e)) return; e.preventDefault(); setFileOver(true); };
+    const leave = (e: DragEvent) => { if (!e.relatedTarget) setFileOver(false); };
+    const drop = async (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault(); setFileOver(false);
+      const added = await importDocs(e.dataTransfer!.files);
+      if (added.length) useUI.getState().set({ tab: 'docs', openDoc: added.length === 1 ? added[0].id : null });
+    };
+    window.addEventListener('dragover', over); window.addEventListener('dragleave', leave); window.addEventListener('drop', drop);
+    return () => { window.removeEventListener('dragover', over); window.removeEventListener('dragleave', leave); window.removeEventListener('drop', drop); };
+  }, []);
+
   return (
     <div className="dm">
+      {fileOver && <div className="file-drop"><div>📄 Drop to add to Documents</div></div>}
+      <DocViewer />
       <header className="topbar">
         <div className="brand">DCC <span>Table</span></div>
         <select className="scene-select" value={scene.id} onChange={e => st.set(d => { d.activeSceneId = e.target.value; })} aria-label="Scene you are editing">
@@ -271,6 +292,7 @@ export default function DMView() {
             {ui.tab === 'loot' && <LootPanel />}
             {ui.tab === 'scenes' && <ScenesPanel />}
             {ui.tab === 'notes' && <NotesPanel />}
+            {ui.tab === 'docs' && <DocsPanel />}
             {ui.tab === 'log' && <LogPanel />}
           </div>
         </aside>

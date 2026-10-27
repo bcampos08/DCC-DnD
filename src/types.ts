@@ -203,6 +203,7 @@ export interface Campaign {
   settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number; fx?: boolean; fxSound?: boolean; fxVolume?: number };
   monsterNotes: Record<string, string>; // by monster id, shared by every copy
   sceneFolders: SceneFolder[];
+  docs: Doc[];
   notes: Note[];
 }
 
@@ -257,4 +258,19 @@ export interface LastingFx {
   endsAt?: number; // Date.now() when it stops (seconds-based)
   endsRound?: number; // combat round when it stops (rounds-based)
   endsOnEntry?: string; // ...at the start of this initiative entry's turn (the caster's)
+}
+
+// A document dropped into the Docs tab. The original file is kept as an asset;
+// Word and text files also keep their (editable) contents here.
+export interface Doc {
+  id: string;
+  name: string;
+  kind: 'pdf' | 'word' | 'text' | 'image' | 'other';
+  mime: string;
+  size: number;
+  asset: string; // "asset:..." original file
+  html?: string; // word: converted, editable
+  text?: string; // text: editable
+  addedAt: number;
+  editedAt?: number;
 }
