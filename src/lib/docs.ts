@@ -16,12 +16,12 @@ export function kindOf(f: { name: string; type: string }): Doc['kind'] {
   return 'other';
 }
 
-export async function importDocs(files: FileList | File[]) {
+export async function importDocs(files: FileList | File[], folderId?: string) {
   const added: Doc[] = [];
   for (const f of Array.from(files)) {
     try {
       const kind = kindOf(f);
-      const doc: Doc = { id: uid(), name: f.name, kind, mime: f.type, size: f.size, asset: await saveAsset(f), addedAt: Date.now() };
+      const doc: Doc = { id: uid(), name: f.name, kind, mime: f.type, size: f.size, asset: await saveAsset(f), addedAt: Date.now(), folderId };
       if (kind === 'text') doc.text = await f.text();
       if (kind === 'word') {
         const mammoth = await import('mammoth');

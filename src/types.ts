@@ -205,6 +205,7 @@ export interface Campaign {
   monsterNotes: Record<string, string>; // by monster id, shared by every copy
   sceneFolders: SceneFolder[];
   docs: Doc[];
+  docFolders: SceneFolder[];
   notes: Note[];
 }
 
@@ -266,6 +267,7 @@ export interface LastingFx {
 export interface Doc {
   id: string;
   name: string;
+  folderId?: string;
   kind: 'pdf' | 'word' | 'text' | 'image' | 'other';
   mime: string;
   size: number;

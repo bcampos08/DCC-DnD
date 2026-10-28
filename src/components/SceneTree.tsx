@@ -5,7 +5,7 @@ import { uid } from '../lib/id';
 import type { Scene, SceneFolder } from '../types';
 
 type Drag = { kind: 'scene' | 'folder'; id: string } | null;
-const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+export const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
 
 // "Dungeon / Level 1" style path for a folder.
 export function folderPath(folders: SceneFolder[], id?: string): string {
@@ -15,7 +15,7 @@ export function folderPath(folders: SceneFolder[], id?: string): string {
   return parts.join(' / ');
 }
 
-const isInside = (folders: SceneFolder[], id: string | undefined, ancestor: string) => {
+export const isInside = (folders: SceneFolder[], id: string | undefined, ancestor: string) => {
   let f = folders.find(x => x.id === id);
   for (let guard = 0; f && guard < 50; guard++) { if (f.id === ancestor) return true; f = folders.find(x => x.id === f!.parentId); }
   return false;
