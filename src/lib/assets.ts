@@ -78,3 +78,9 @@ export async function putAsset(key: string, blob: Blob) {
   if (old) URL.revokeObjectURL(old);
   urlCache.delete(key);
 }
+
+// Saves a picture for a character or token, shrunk to a sensible size.
+export async function saveTokenImage(file: File): Promise<string> {
+  const { blob } = await prepareImage(file, 512);
+  return saveAsset(blob);
+}

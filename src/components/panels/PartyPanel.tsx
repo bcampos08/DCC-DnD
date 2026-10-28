@@ -17,6 +17,7 @@ import DeathSaves from '../DeathSaves';
 import { send } from '../../lib/sync';
 import type { Character, LootItem } from '../../types';
 import { ABILITIES } from '../../types';
+import Pic from '../Pic';
 import { RNAME } from '../../loot/engine';
 
 export default function PartyPanel() {
@@ -57,9 +58,9 @@ export default function PartyPanel() {
         {chars.map(c => (
           <li key={c.id} className="char-card" style={{ ['--pc' as string]: c.color }}>
             <div className="row gap">
-              {c.portrait ? <img className="portrait" src={c.portrait} alt="" /> : <span className="portrait ph">{c.name[0]}</span>}
+              {c.image || c.portrait ? <Pic className="portrait" src={c.image || c.portrait} /> : <span className="portrait ph">{c.name[0]}</span>}
               <div className="grow">
-                <button className="char-name" onClick={() => setOpen(open === c.id ? null : c.id)}>{c.name}</button>
+                <button className="char-name" onClick={() => setOpen(open === c.id ? null : c.id)} title={open === c.id ? 'Hide details' : 'Show details'}>{c.name} <small className="muted">{open === c.id ? '▴' : '▾'}</small></button>
                 <small className="muted">{c.summary}</small>
               </div>
               <span className="ac-badge">AC {c.ac}</span>
@@ -96,6 +97,7 @@ export default function PartyPanel() {
                   {c.ddbId && <button className="btn sm" onClick={() => sync(c)}>⟳ Sync</button>}
                   {c.ddbId && <a className="btn sm" href={`https://www.dndbeyond.com/characters/${c.ddbId}`} target="_blank" rel="noreferrer">Open sheet ↗</a>}
                   <button className="btn sm" onClick={() => setEditing(c)}>Edit</button>
+                  <button className="btn sm ghost" onClick={() => setOpen(null)}>▴ Hide details</button>
                   <button className="btn sm danger" onClick={() => { if (confirm(`Remove ${c.name} from the party?`)) st.set(d => { d.characters = d.characters.filter(x => x.id !== c.id); d.scenes.forEach(s => { s.tokens = s.tokens.filter(t => t.charId !== c.id); }); }); }}>Remove</button>
                 </div>
                 {c.syncedAt && <small className="muted">Last synced {new Date(c.syncedAt).toLocaleString()}</small>}

@@ -45,6 +45,7 @@ export interface Character {
   player?: string;
   summary?: string; // e.g. "Level 3 Wood Elf Ranger"
   portrait?: string; // remote URL
+  image?: string; // uploaded picture ("asset:..."), shown instead of the portrait; kept through D&D Beyond syncs
   ac: number;
   maxHp: number;
   hp: number;

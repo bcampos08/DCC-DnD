@@ -9,7 +9,7 @@ import FxPicker from './FxPicker';
 import TokenAttacks from './TokenAttacks';
 import { findMonster } from '../lib/monsters';
 import { LIGHTS } from '../lib/vision';
-import { saveAsset } from '../lib/assets';
+import { saveTokenImage } from '../lib/assets';
 import { TOKEN_COLORS } from '../lib/rules';
 import type { Token } from '../types';
 
@@ -100,14 +100,16 @@ export default function TokenCard() {
       <div className="row gap wrap">
         <button className="btn sm" onClick={() => upd({ hidden: !t.hidden })}>{t.hidden ? '👁 Reveal to players' : '🙈 Hide from players'}</button>
         <button className="btn sm" onClick={() => file.current?.click()}>Token image</button>
-        {t.image && <button className="btn sm" onClick={() => upd({ image: undefined })}>Clear image</button>}
+        {t.image ? <button className="btn sm" onClick={() => upd({ image: undefined })}>Clear image</button>
+          : ch?.image && <button className="btn sm" onClick={() => st.updateChar(ch.id, { image: undefined })}>Clear image</button>}
         {t.monsterId && <button className="btn sm" onClick={() => useUI.getState().set({ tab: 'monsters', monsterId: t.monsterId })}>Stat block</button>}
         <button className="btn sm danger" onClick={remove}>Remove</button>
       </div>
       <input ref={file} type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files?.[0]; if (f) {
-        const image = await saveAsset(f);
-        // A monster's picture is used for every copy of it in this scene.
-        if (t.monsterId) st.updateScene(sceneId, s => { s.tokens.forEach(x => { if (x.monsterId === t.monsterId) x.image = image; }); });
+        const image = await saveTokenImage(f);
+        // A character's picture follows them to every scene; a monster's is used for every copy of it in this scene.
+        if (t.charId) { st.updateChar(t.charId, { image }); if (t.image) upd({ image: undefined }); }
+        else if (t.monsterId) st.updateScene(sceneId, s => { s.tokens.forEach(x => { if (x.monsterId === t.monsterId) x.image = image; }); });
         else upd({ image });
       } e.target.value = ''; }} />
     </div>

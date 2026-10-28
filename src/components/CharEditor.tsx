@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import Pic from './Pic';
+import { saveTokenImage } from '../lib/assets';
 import Modal from './Modal';
 import { useCampaign } from '../store';
 import { uid } from '../lib/id';
@@ -20,6 +22,7 @@ export default function CharEditor({ initial, onClose }: { initial?: Character; 
     : { id: uid(), name: '', summary: '', ac: 10, maxHp: 10, hp: 10, tempHp: 0, initBonus: 0, passivePerception: 10, speed: '30 ft.', conditions: [], level: 1,
       abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, saveProf: [], skillProf: {}, attacks: [],
       color: PC_COLORS[useCampaign.getState().characters.length % PC_COLORS.length] });
+  const file = useRef<HTMLInputElement>(null);
   const [autoInit, setAutoInit] = useState(!initial || initial.initBonus === modOf(initial.abilities?.dex ?? 10));
   const up = (p: Partial<Character>) => setC(x => ({ ...x, ...p }));
   const ab = c.abilities!;
@@ -64,7 +67,19 @@ export default function CharEditor({ initial, onClose }: { initial?: Character; 
             <label className="check"><input type="checkbox" checked={autoInit} onChange={e => setAutoInit(e.target.checked)} />= Dex</label>
           </span>
         </label>
-        <label className="field">Portrait URL<input value={c.portrait ?? ''} onChange={e => up({ portrait: e.target.value || undefined })} /></label>
+        <label className="field">Portrait URL<input value={c.portrait ?? ''} onChange={e => up({ portrait: e.target.value || undefined })} placeholder="https://…" /></label>
+      </div>
+      <div className="row gap wrap pic-row">
+        {c.image || c.portrait ? <Pic className="portrait big" src={c.image || c.portrait} /> : <span className="portrait big ph">{c.name[0] ?? '?'}</span>}
+        <div className="grow">
+          <b>Token picture</b>
+          <small className="muted block">{c.image ? 'Using a picture from your computer. It stays when you sync from D&D Beyond.' : 'Upload a picture from your computer, or paste a portrait URL above.'}</small>
+          <div className="row gap">
+            <button className="btn sm" onClick={() => file.current?.click()}>🖼 {c.image ? 'Change picture' : 'Upload picture'}</button>
+            {c.image && <button className="btn sm ghost" onClick={() => up({ image: undefined })}>Remove picture</button>}
+          </div>
+        </div>
+        <input ref={file} type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) up({ image: await saveTokenImage(f) }); }} />
       </div>
       <div className="swatches">{PC_COLORS.map(col => <button key={col} className={'sw' + (c.color === col ? ' on' : '')} style={{ background: col }} onClick={() => up({ color: col })} aria-label={`Colour ${col}`} />)}</div>
 

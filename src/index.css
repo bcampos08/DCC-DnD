@@ -463,3 +463,4 @@ h3, h4 { margin: 0; }
 .dv-text { flex: 1 0 auto; border: 0; background: transparent; color: inherit; padding: 40px 56px; font: inherit; line-height: 1.6; resize: none; outline: none; font-family: Georgia, 'Palatino Linotype', serif; min-height: 70vh; overflow: hidden; }
 .dv-empty { margin: auto; align-self: center; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 @media (max-width: 700px) { .dv-rich, .dv-text { padding: 24px 18px; } }
+.pic-row { align-items: center; margin: 8px 0; }

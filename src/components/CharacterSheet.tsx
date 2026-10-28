@@ -1,3 +1,4 @@
+import Pic from './Pic';
 import { useState } from 'react';
 import Modal from './Modal';
 import DiceText from './DiceText';
@@ -29,7 +30,7 @@ export default function CharacterSheet({ charId, onClose, onEdit }: { charId: st
   return (
     <Modal title={c.name} onClose={onClose} wide>
       <div className="sheet-head">
-        {c.portrait && <img className="portrait big" src={c.portrait} alt="" />}
+        {(c.image || c.portrait) && <Pic className="portrait big" src={c.image || c.portrait} />}
         <div className="grow">
           <div>{c.summary}</div>
           <small className="muted">{[sh?.alignment, sh?.background?.name, c.player && `Player: ${c.player}`, sh?.xp != null && `${sh.xp.toLocaleString()} XP`].filter(Boolean).join(' · ')}</small>

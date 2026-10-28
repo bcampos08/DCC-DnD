@@ -57,6 +57,7 @@ function assetKeys(c: Campaign) {
     if (s.map?.src.startsWith('asset:')) keys.add(s.map.src);
     for (const t of s.tokens) if (t.image?.startsWith('asset:')) keys.add(t.image);
   }
+  for (const ch of c.characters) if (ch.image?.startsWith('asset:')) keys.add(ch.image);
   for (const d of c.docs ?? []) keys.add(d.asset);
   return [...keys];
 }

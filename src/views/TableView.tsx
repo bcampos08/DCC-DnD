@@ -1,3 +1,4 @@
+import Pic from '../components/Pic';
 import { useEffect, useRef, useState } from 'react';
 import MapCanvas from '../components/MapCanvas';
 import RollCard from '../components/RollCard';
@@ -74,7 +75,7 @@ export default function TableView() {
   const chars = new Map(state.chars.map(c => [c.id, c]));
   const creature = (t: Token) => {
     const c = t.charId ? chars.get(t.charId) : undefined;
-    if (c) return { name: c.name, hp: c.hp, maxHp: c.maxHp, tempHp: c.tempHp, conditions: c.conditions, concentrating: !!c.concentrating, portrait: c.portrait, ac: c.ac, deathSaves: c.deathSaves };
+    if (c) return { name: c.name, hp: c.hp, maxHp: c.maxHp, tempHp: c.tempHp, conditions: c.conditions, concentrating: !!c.concentrating, portrait: c.image || c.portrait, ac: c.ac, deathSaves: c.deathSaves };
     // Monster AC is blanked in the players' copy, so no badge shows.
     return { name: t.name, hp: t.hp, maxHp: t.maxHp, tempHp: 0, conditions: t.conditions, concentrating: !!t.concentrating, ac: t.ac };
   };
@@ -96,7 +97,7 @@ export default function TableView() {
             const c = e.charId ? chars.get(e.charId) : undefined;
             return (
               <span key={e.id} className={'turn' + (i === enc.turn ? ' now' : '') + (e.charId ? ' pc' : '')} style={c ? { ['--pc' as string]: c.color } : undefined}>
-                {c?.portrait && <img src={c.portrait} alt="" />}{label(e)}
+                {(c?.image || c?.portrait) && <Pic src={c.image || c.portrait} />}{label(e)}
                 {c?.conditions.length ? <small>{c.conditions.map(x => COND[x]?.short).join(' ')}</small> : null}
               </span>
             );
