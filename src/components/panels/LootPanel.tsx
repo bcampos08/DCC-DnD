@@ -5,6 +5,7 @@ import { useUI } from '../../ui';
 import { uid } from '../../lib/id';
 import { send } from '../../lib/sync';
 import type { LootItem } from '../../types';
+import { ItemDetails } from '../SrdText';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 const coinText = (c: LootResult['coins']) => {
@@ -31,7 +32,7 @@ export default function LootPanel() {
   const toggle = (i: number) => setPicked(p => { const n = new Set(p); if (n.has(i)) n.delete(i); else n.add(i); return n; });
   const chosen = (): LootItem[] => {
     if (!res) return [];
-    const items: LootItem[] = res.items.filter((_, i) => picked.has(i)).map(it => ({ id: uid(), name: it.name, q: it.q, rarity: it.r, desc: it.desc, value: it.value, cat: it.cat, to: to || undefined, at: Date.now() }));
+    const items: LootItem[] = res.items.filter((_, i) => picked.has(i)).map(it => ({ id: uid(), name: it.name, q: it.q, rarity: it.r, desc: it.desc, value: it.value, cat: it.cat, ref: it.id, to: to || undefined, at: Date.now() }));
     const ct = coinText(res.coins);
     if (coins && ct) items.unshift({ id: uid(), name: ct, q: 1, rarity: 'M', desc: 'Coins', cat: 'coins', to: to || undefined, at: Date.now() });
     return items;
@@ -85,6 +86,7 @@ export default function LootPanel() {
                 <b>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}</b>
                 <div className="muted sm"><span className={`rar r-${it.r}`}>{RNAME[it.r]}</span> · {CATS[it.cat] ?? it.cat}{it.extra ? ` · ${it.extra}` : ''}{it.value ? ` · ${it.value}` : ''} · {it.src}</div>
                 {it.desc && <div className="sm">{it.desc}</div>}
+                <ItemDetails name={it.name} refId={it.id} cat={it.cat} />
               </div>
               <button className="btn sm" onClick={() => { rerollAt(res, i); force(x => x + 1); }}>Reroll</button>
             </div>

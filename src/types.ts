@@ -188,7 +188,7 @@ export interface RollResult {
   parts?: RollResult[]; // e.g. attack + damage
 }
 
-export interface LootItem { id: string; name: string; q: number; rarity: string; desc: string; value?: string; cat: string; to?: string; at: number }
+export interface LootItem { id: string; name: string; q: number; rarity: string; desc: string; value?: string; cat: string; to?: string; at: number; ref?: string /* Loot Box item id */ }
 
 export interface Campaign {
   name: string;

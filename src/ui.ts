@@ -10,7 +10,7 @@ export type Tool =
   | `tpl-${TemplateShape}`
   | 'grid-align';
 
-export type Tab = 'combat' | 'monsters' | 'party' | 'loot' | 'scenes' | 'notes' | 'docs' | 'log';
+export type Tab = 'combat' | 'monsters' | 'party' | 'loot' | 'scenes' | 'notes' | 'docs' | 'rules' | 'log';
 
 interface UI {
   tool: Tool;

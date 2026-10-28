@@ -576,6 +576,13 @@ Ioun Stone of Strength|V|wond|bw||+2 Strength.
 Manual of Bodily Health|V|wond|bw||Study it for +2 Constitution, permanently.
 Manual of Gainful Exercise|V|wond|bw||Study it for +2 Strength, permanently.
 Manual of Golems|V|wond|cr||Instructions for building a golem.
+Amulet of the Planes|V|wond|qs||Cast plane shift with a DC 15 Intelligence check.
+Gray Bag of Tricks|U|wond|pt,cb||Pull out a fuzzy ball that becomes a small beast ally.
+Rust Bag of Tricks|U|wond|pt,cb||Pull out a fuzzy ball that becomes a beast ally.
+Tan Bag of Tricks|U|wond|pt,cb||Pull out a fuzzy ball that becomes a large beast ally.
+Efficient Quiver|U|wond|r,ut||Holds 60 arrows, 18 javelins and 6 bows without the weight.
+Iron Flask|L|wond|bt,cb||Trap a creature from another plane inside the flask.
+Stone of Controlling Earth Elementals|R|wond|cb||Summon an earth elemental once per day.
 Manual of Quickness of Action|V|wond|cb||Study it for +2 Dexterity, permanently.
 Mirror of Life Trapping|V|wond|bt||Traps creatures that see their reflection.
 Nolzur's Marvelous Pigments|V|wond|cr,pc||Paint things that become real.

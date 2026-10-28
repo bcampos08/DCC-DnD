@@ -18,6 +18,7 @@ import { send } from '../../lib/sync';
 import type { Character, LootItem } from '../../types';
 import { ABILITIES } from '../../types';
 import Pic from '../Pic';
+import { ItemDetails } from '../SrdText';
 import { RNAME } from '../../loot/engine';
 
 export default function PartyPanel() {
@@ -175,6 +176,7 @@ function LootRow({ it }: { it: LootItem }) {
       <div className="grow">
         <b>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}</b> <span className={`rar r-${it.rarity}`}>{it.cat === 'coins' ? '' : RNAME[it.rarity as keyof typeof RNAME] ?? ''}</span>
         {it.desc && it.cat !== 'coins' && <small className="muted block">{it.desc}</small>}
+        <ItemDetails name={it.name} refId={it.ref} cat={it.cat} />
       </div>
       <select value={owner} onChange={e => st.set(d => { const x = d.partyLoot.find(x => x.id === it.id); if (x) x.to = e.target.value || undefined; })} aria-label="Given to">
         <option value="">Party</option>
@@ -213,7 +215,7 @@ function Inventory({ c, items }: { c: Character; items: LootItem[] }) {
       {ddb.length > 0 && (
         <>
           <div className="inv-sub">On D&D Beyond <small className="muted">(read-only, updates on Sync)</small></div>
-          <ul className="ddb-inv">{ddb.map((it, i) => <li key={i}>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}{it.equipped && <span className="tag">equipped</span>}</li>)}</ul>
+          <ul className="ddb-inv">{ddb.map((it, i) => <li key={i}>{it.name}{it.q > 1 ? ` ×${it.q}` : ''}{it.equipped && <span className="tag">equipped</span>}<ItemDetails name={it.name} /></li>)}</ul>
         </>
       )}
     </details>

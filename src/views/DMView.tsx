@@ -12,6 +12,7 @@ import LootPanel from '../components/panels/LootPanel';
 import ScenesPanel from '../components/panels/ScenesPanel';
 import LogPanel from '../components/panels/LogPanel';
 import NotesPanel from '../components/panels/NotesPanel';
+import RulesPanel from '../components/panels/RulesPanel';
 import DocsPanel from '../components/panels/DocsPanel';
 import DocViewer from '../components/DocViewer';
 import { importDocs } from '../lib/docs';
@@ -32,7 +33,7 @@ import { nextTurn } from '../lib/actions';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'combat', label: '⚔ Combat' }, { id: 'monsters', label: '🐉 Monsters' }, { id: 'party', label: '🛡 Party' },
-  { id: 'loot', label: '💰 Loot' }, { id: 'scenes', label: '🗺 Scenes' }, { id: 'notes', label: '📝 Notes' }, { id: 'docs', label: '📄 Docs' }, { id: 'log', label: '🎲 Log' },
+  { id: 'loot', label: '💰 Loot' }, { id: 'scenes', label: '🗺 Scenes' }, { id: 'notes', label: '📝 Notes' }, { id: 'docs', label: '📄 Docs' }, { id: 'rules', label: '📖 Rules' }, { id: 'log', label: '🎲 Log' },
 ];
 
 export function fitCamera(scene: Scene, w: number, h: number): Camera {
@@ -293,6 +294,7 @@ export default function DMView() {
             {ui.tab === 'scenes' && <ScenesPanel />}
             {ui.tab === 'notes' && <NotesPanel />}
             {ui.tab === 'docs' && <DocsPanel />}
+            {ui.tab === 'rules' && <RulesPanel />}
             {ui.tab === 'log' && <LogPanel />}
           </div>
         </aside>
