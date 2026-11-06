@@ -494,3 +494,9 @@ h3, h4 { margin: 0; }
 .ref-body { padding: 4px 10px 8px; border-top: 1px solid var(--line); }
 .ref-list > li.ref-divider { border: 0; background: none; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 2px 4px; background: var(--panel); }
 .rules-panel .chips { margin: 6px 0; }
+.mon-loot { display: flex; flex-direction: column; gap: 6px; }
+.mon-loot .sub-h { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin-top: 4px; }
+.mon-loot .chips { flex-wrap: wrap; }
+.roll-in { width: 4.2ch; text-align: center; font-family: var(--display); font-size: 1.2rem; padding: 2px 4px; }
+.lr-band { padding: 6px 12px; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); }
+.lr-band b { color: var(--fg); }

@@ -70,10 +70,10 @@ Torches|M|gear|ut,qs|q:10|Each burns for an hour, bright light 20 ft. 1 cp each.
 Tinderbox|M|gear|ut||Flint, steel and tinder. 5 sp.
 Hooded Lantern|M|gear|ut,qs,st||Bright light 30 ft; can be hooded to dim light. 5 gp.
 Bullseye Lantern|M|gear|ut,dt||Bright light in a 60-foot cone. 10 gp.
-Oil|M|gear|ex,cbp,ut|q:1d4|Throw to splash, then set it alight for 5 fire damage. 1 sp a flask.
+Oil|M|gear|ex,cbp,ut,su|q:1d4|Throw to splash, then set it alight for 5 fire damage. 1 sp a flask.
 Rations (5 days)|M|gear|qs||Dried food for travel. 2 sp.
 Waterskin|M|gear|qs||Holds 4 pints. 2 sp.
-Healer's Kit|M|gear|hl,pc,cbp||10 uses. Stabilize a dying creature without a check. 5 gp.
+Healer's Kit|M|gear|hl,pc,cbp,su||10 uses. Stabilize a dying creature without a check. 5 gp.
 Climber's Kit|M|gear|qs,st||Pitons, boot tips, gloves and harness. 25 gp.
 Manacles|M|gear|bt||DC 20 Dexterity to slip free, DC 20 Strength to break. 2 gp.
 Chain (10 ft)|M|gear|bt,bw||10 hit points; DC 20 Strength to burst. 5 gp.
@@ -87,8 +87,8 @@ Ball Bearings (bag of 1,000)|M|gear|st,ut||Cover a 10-ft square; DC 10 Dexterity
 Caltrops (bag of 20)|M|gear|st,ut||Cover a 5-ft square; 1 piercing and slowed. 1 gp.
 Hunting Trap|M|gear|bt,pt||DC 13 Dexterity or 1d4 piercing and stuck. 5 gp.
 Steel Mirror|M|gear|ut,st||Handy for peeking around corners. 5 gp.
-Antitoxin|M|gear|hl,cbp||Advantage on saves against poison for 1 hour. 50 gp.
-Holy Water|M|gear|cbp,ex||Thrown: 2d6 radiant to a fiend or undead. 25 gp.
+Antitoxin|M|gear|hl,cbp,su||Advantage on saves against poison for 1 hour. 50 gp.
+Holy Water|M|gear|cbp,ex,su||Thrown: 2d6 radiant to a fiend or undead. 25 gp.
 Component Pouch|M|gear|ut||Holds the material components for spells. 25 gp.
 Two-Person Tent|M|gear|qs||A simple portable shelter. 2 gp.
 Fishing Tackle|M|gear|qs,pc||Rod, line, floats and hooks. 1 gp.
@@ -468,10 +468,10 @@ Cloak of the Manta Ray|U|wond|ap,qs||Breathe and swim underwater with the hood u
 Decanter of Endless Water|U|wond|ut,cr,qs||Pours water: a stream, a fountain or a geyser.
 Deck of Illusions|U|wond|ut,pc,st||Throw a card to create an illusion of a creature.
 Driftglobe|U|wond|ut,qs||A floating globe of light that can follow you.
-Dust of Disappearance|U|wond|st||Everyone nearby turns invisible for 2d4 minutes.
-Dust of Dryness|U|wond|ut||Turns water into a pellet; can wreck water elementals.
-Dust of Sneezing and Choking|U|wond|cu,ex||Looks like dust of disappearance. Everyone nearby starts choking.
-Elemental Gem|U|wond|cb|v:elem|Break it to summon an elemental.
+Dust of Disappearance|U|wond|st,su||Everyone nearby turns invisible for 2d4 minutes.
+Dust of Dryness|U|wond|ut,su||Turns water into a pellet; can wreck water elementals.
+Dust of Sneezing and Choking|U|wond|cu,ex,su||Looks like dust of disappearance. Everyone nearby starts choking.
+Elemental Gem|U|wond|cb,su|v:elem|Break it to summon an elemental.
 Eversmoking Bottle|U|wond|st,pc||Pours out a huge cloud of thick smoke.
 Eyes of Charming|U|wond|ap,pc||Cast charm person (DC 13) three times a day.
 Eyes of Minute Seeing|U|wond|ap,cr,dt||Advantage on Investigation within 1 ft.
@@ -489,7 +489,7 @@ Heward's Handy Haversack|U|wond|ut,qs||A backpack with large magic pockets; what
 Instrument of the Bards: Doss Lute|U|wond|pc||A bard's lute that adds spells to their repertoire.
 Instrument of the Bards: Fochlucan Bandore|U|wond|pc||A bard's bandore that adds spells to their repertoire.
 Instrument of the Bards: Mac-Fuirmidh Cittern|U|wond|pc||A bard's cittern that adds spells to their repertoire.
-Keoghtom's Ointment|U|wond|hl,pc||Heals 2d8 + 2 and cures poison and disease. 1d4 + 1 doses.
+Keoghtom's Ointment|U|wond|hl,pc,su||Heals 2d8 + 2 and cures poison and disease. 1d4 + 1 doses.
 Lantern of Revealing|U|wond|dt,qs||Its light reveals invisible creatures.
 Medallion of Thoughts|U|wond|dt||Cast detect thoughts (DC 13).
 Necklace of Adaptation|U|wond|qs||Breathe in any environment.
@@ -505,8 +505,8 @@ Stone of Good Luck|U|wond|ut,pc||+1 to ability checks and saves.
 Wind Fan|U|wond|ut||Cast gust of wind.
 Winged Boots|U|wond|ap,sh,qs||Flying speed equal to walking speed, up to 4 hours a day.
 Amulet of Health|R|wond|bw,hl||Constitution becomes 19.
-Bag of Beans|R|wond|cu,ut||Plant a bean and see what happens. It is often a disaster.
-Bead of Force|R|wond|ex,cb||Explodes for 5d4 force and traps creatures in a sphere.
+Bag of Beans|R|wond|cu,ut,su||Plant a bean and see what happens. It is often a disaster.
+Bead of Force|R|wond|ex,cb,su||Explodes for 5d4 force and traps creatures in a sphere.
 Belt of Dwarvenkind|R|wond|ap,bw||+2 Con, darkvision, advantage on social checks with dwarves.
 Belt of Hill Giant Strength|R|wond|ap,bw,cb||Strength becomes 21.
 Boots of Levitation|R|wond|ap,sh,qs||Cast levitate on yourself at will.
@@ -522,7 +522,7 @@ Cloak of the Bat|R|wond|ap,st||Advantage on Stealth; fly in dim light; turn into
 Cube of Force|R|wond|pc||Create a cube-shaped barrier around you.
 Daern's Instant Fortress|R|wond|qs||A small cube that grows into a stone tower.
 Dimensional Shackles|R|wond|bt||Manacles that prevent teleportation and planar travel.
-Feather Token|R|wond|qs,ut|v:feather|Quaal's single-use feather that becomes something useful.
+Feather Token|R|wond|qs,ut,su|v:feather|Quaal's single-use feather that becomes something useful.
 Figurine of Wondrous Power: Silver Raven|U|wond|pt,dt||Turns into a raven messenger.
 Figurine of Wondrous Power: Bronze Griffon|R|wond|pt,qs||Turns into a griffon mount.
 Figurine of Wondrous Power: Ebony Fly|R|wond|pt,qs||Turns into a giant fly you can ride.
@@ -543,7 +543,7 @@ Ioun Stone of Reserve|R|wond|ut||Stores spells for later.
 Ioun Stone of Sustenance|R|wond|qs||No need to eat or drink.
 Iron Bands of Bilarro|R|wond|bt||Throw the sphere and it binds a creature in iron bands.
 Mantle of Spell Resistance|R|wond|ap,cb||Advantage on saves against spells.
-Necklace of Fireballs|R|wond|ex,cb||Pull off a bead and throw it as a fireball.
+Necklace of Fireballs|R|wond|ex,cb,su||Pull off a bead and throw it as a fireball.
 Necklace of Prayer Beads|R|wond|hl,pc||Beads that cast healing and holy spells.
 Periapt of Proof against Poison|R|wond|hl||Immune to poison.
 Portable Hole|R|wond|ut,qs,st||A cloth circle that opens into a 10-ft-deep hole.
@@ -577,9 +577,6 @@ Manual of Bodily Health|V|wond|bw||Study it for +2 Constitution, permanently.
 Manual of Gainful Exercise|V|wond|bw||Study it for +2 Strength, permanently.
 Manual of Golems|V|wond|cr||Instructions for building a golem.
 Amulet of the Planes|V|wond|qs||Cast plane shift with a DC 15 Intelligence check.
-Gray Bag of Tricks|U|wond|pt,cb||Pull out a fuzzy ball that becomes a small beast ally.
-Rust Bag of Tricks|U|wond|pt,cb||Pull out a fuzzy ball that becomes a beast ally.
-Tan Bag of Tricks|U|wond|pt,cb||Pull out a fuzzy ball that becomes a large beast ally.
 Efficient Quiver|U|wond|r,ut||Holds 60 arrows, 18 javelins and 6 bows without the weight.
 Iron Flask|L|wond|bt,cb||Trap a creature from another plane inside the flask.
 Stone of Controlling Earth Elementals|R|wond|cb||Summon an earth elemental once per day.
@@ -614,6 +611,194 @@ Talisman of the Sphere|L|wond|ut||Lets you control a sphere of annihilation more
 Talisman of Ultimate Evil|L|wond|cb||An evil cleric's focus that can destroy a good foe.
 Universal Solvent|L|wond|cr||Dissolves any adhesive, including sovereign glue.
 Well of Many Worlds|L|wond|qs||A cloth circle that opens a portal to another world.
+Rat Tail|M|part||1 cp,mt:bea|Long, pink and faintly greasy.
+Goblin Ear|M|part||1 cp,mt:hum|Some bounty boards pay a copper apiece.
+Bone Fragments|M|part||1 cp,q:1d6,mt:bea/mon/hum/und/gia|Cracked bones, picked clean.
+Kobold Scales|M|part||1 cp,q:2d6,mt:hum/dra|Small reddish scales that flake off easily.
+Bat Wing|M|part||1 cp,mt:bea|Leathery and thin. Witches ask for these.
+Boar Tusk|M|part||5 sp,mt:bea|A curved yellow tusk; good for carving.
+Giant Rat Pelt|M|part||2 sp,mt:bea|Mangy, but it is fur.
+Wolf Pelt|M|part||2 gp,mt:bea|A thick grey pelt, mostly in one piece.
+Crow Feathers|M|part||1 cp,q:2d6,mt:bea|Black feathers, good for fletching.
+Orc Tooth|M|part||1 sp,q:1d4,mt:hum|Thick, yellow and chipped.
+Skeleton Skull|M|part||5 cp,mt:und|The jaw is missing. It may be watching you anyway.
+Zombie Finger|M|part||1 cp,mt:und|Still twitches now and then.
+Stirge Proboscis|M|part||1 sp,mt:bea|A hollow needle-like mouth. Makes a fine straw, if you dare.
+Giant Spider Leg|M|part||5 sp,mt:bea|Long, hairy and surprisingly light.
+Lizard Skin|M|part||5 sp,mt:bea|Tough, scaly hide.
+Gnoll Mane|M|part||1 sp,mt:hum|A matted hank of coarse hair.
+Bear Claws|M|part||1 gp,q:1d4,mt:bea|Thick black claws. Popular on necklaces.
+Snake Skin|M|part||5 sp,mt:bea|A shed skin, nearly whole.
+Bandit's Bloody Rag|M|part||mt:bea/mon|A scrap of cloth from whatever it ate last.
+Crocodile Hide|C|part||10 gp,mt:bea|Armored hide that tanners prize.
+Giant Spider Venom Sac|C|part||25 gp,mt:bea|A swollen gland. A poisoner can make 1 dose of serpent venom from it.
+Owlbear Feathers|C|part||5 gp,q:1d4,mt:mon|Brown feathers with fur at the quill.
+Worg Fang|C|part||5 gp,q:1d4,mt:mon|A long, wicked canine.
+Harpy Feathers|C|part||2 gp,q:1d6,mt:mon|Greasy feathers that smell awful.
+Ghoul Claw|C|part||10 gp,mt:und|The tip still carries a numbing film.
+Dire Wolf Pelt|C|part||25 gp,mt:bea|A huge black pelt. Makes a warm cloak.
+Gelatinous Cube Residue|C|part||15 gp,mt:ooz|A vial of clear slime. It dissolves organic matter slowly.
+Imp Tail|C|part||20 gp,mt:fie|The barbed tip still stings.
+Giant Centipede Carapace|C|part||5 gp,mt:bea|Segmented plates of hard shell.
+Darkmantle Hide|C|part||10 gp,mt:mon|Rubbery, light-absorbing skin.
+Rust Monster Antenna|C|part||25 gp,mt:mon|Metal rusts faintly where it touches.
+Ankheg Acid Gland|C|part||25 gp,mt:mon|A sack of acid. An alchemist can make a vial of acid from it.
+Hobgoblin Insignia|C|part||5 gp,mt:hum|A legion badge torn from armor.
+Kenku Feathers|C|part||2 gp,q:1d6,mt:hum|Black feathers that sometimes whisper.
+Basilisk Eye|U|part||100 gp,mt:mon|A milky eye that still feels heavy to hold.
+Hell Hound Tongue|U|part||75 gp,mt:fie|Warm to the touch. Never quite cools.
+Manticore Tail Spikes|U|part||10 gp,q:1d6,mt:mon|Iron-hard spikes; make excellent arrowheads.
+Wyvern Stinger|U|part||100 gp,mt:dra|A poisoner can make 1 dose of wyvern poison from it.
+Troll Finger|U|part||50 gp,mt:gia|It keeps trying to grow back. Burn it to stop that.
+Ettercap Silk Spool|U|part||50 gp,mt:mon|Strong, sticky silk, good for rope.
+Griffon Feather|U|part||50 gp,mt:mon|A long gold-brown flight feather.
+Displacer Beast Hide|U|part||250 gp,mt:mon|It shimmers and seems to sit a few inches from where it is.
+Phase Spider Fang|U|part||75 gp,mt:mon|Flickers in and out of sight.
+Will-o'-Wisp Mote|U|part||100 gp,mt:und|A glowing spark trapped in a jar.
+Mummy Wrappings|U|part||25 gp,mt:und|Old linen soaked in resin. Smells of tombs.
+Ogre Toenail|U|part||10 gp,mt:gia|The size of a dinner plate. Disgusting. Shields have been made of worse.
+Chuul Tentacle|U|part||50 gp,mt:abe|Still faintly paralytic.
+Hippogriff Feathers|U|part||10 gp,q:1d4,mt:mon|Light, strong quills.
+Gorgon Scale|R|part||100 gp,q:1d4,mt:mon|A metal-like scale that smells of brimstone.
+Preserved Medusa Hair|R|part||300 gp,mt:mon|A small dead snake. Its eyes are closed. Keep them that way.
+Wraith Essence|R|part||250 gp,mt:und|A vial of cold black vapor.
+Chimera Horn|R|part||250 gp,mt:mon|A goat horn scorched at the tip.
+Hydra Head|R|part||300 gp,mt:mon|One of several. Don't leave it near the others.
+Young Dragon Scale|R|part||200 gp,q:1d4,mt:dra|A hand-sized scale. An armorer needs many to make armor.
+Salamander Tail|R|part||250 gp,mt:ele|Still smoking.
+Vampire Spawn Fang|R|part||200 gp,mt:und|A long, needle-sharp canine.
+Roc Feather|R|part||500 gp,mt:mon|Taller than a person.
+Treant Bark|R|part||250 gp,mt:pla|A slab of living bark that still sprouts leaves.
+Bulette Armor Plate|R|part||300 gp,mt:mon|Thick dorsal plating. Makes a good shield.
+Unicorn Hair|R|part||500 gp,mt:cel|Silver-white strands that never tangle.
+Beholder Eyestalk|V|part||2,500 gp,mt:abe|One of ten. Wizards will pay anything for it.
+Mind Flayer Tentacle|V|part||1,500 gp,mt:abe|Slimy and still faintly curious.
+Adult Dragon Scale|V|part||1,000 gp,q:1d4,mt:dra|A shield-sized scale.
+Young Dragon Heart|V|part||5,000 gp,mt:dra|Heavy, hot and still beating faintly.
+Rakshasa Claw|V|part||2,000 gp,mt:fie|Backward-facing claw from a fiend's hand.
+Purple Worm Tooth|V|part||1,500 gp,mt:mon|As long as a greatsword.
+Remorhaz Heat Gland|V|part||2,500 gp,mt:mon|Glows white-hot inside a thick membrane.
+Night Hag Heartstone Shard|V|part||3,000 gp,mt:fie|A chip of black gem that hums with dark magic.
+Behir Scale|V|part||500 gp,q:1d4,mt:mon|Blue scales that crackle with static.
+Ancient Dragon Heart|L|part||25,000 gp,mt:dra|As big as a barrel. Legends say eating it grants great power.
+Ancient Dragon Tooth|L|part||10,000 gp,mt:dra|A tooth the size of a spear.
+Balor Whip Fragment|L|part||15,000 gp,mt:fie|A length of burning lash that never goes out.
+Pit Fiend Wing Membrane|L|part||20,000 gp,mt:fie|Leathery, fire-proof and very large.
+Kraken Beak|L|part||20,000 gp,mt:mon|A colossal hooked beak.
+Phoenix Feather|L|part||30,000 gp,mt:ele|Warm, golden, and impossible to burn.
+Lich Phylactery Shard|L|part||25,000 gp,mt:und|A cracked fragment. Something inside screams very quietly.
+Solar Feather|L|part||30,000 gp,mt:cel|Radiant and weightless.
+Twitching Tentacle Tip|M|part||2 sp,mt:abe|Still curls around your finger if you let it.
+Weird Ichor|M|part||5 sp,mt:abe|A vial of glowing purple blood that won't stay still.
+Gibbering Mouther Tooth|C|part||5 gp,q:1d6,mt:abe|Human-looking teeth. Lots of them.
+Otyugh Tentacle Barb|C|part||10 gp,mt:abe|Thorny and filthy; carries disease if handled carelessly.
+Grell Beak|U|part||50 gp,mt:abe|A sharp, hooked beak from a floating brain-thing.
+Nothic Eye|U|part||100 gp,mt:abe|A single huge eye. Looking into it makes you remember things you'd rather not.
+Cloaker Hide|R|part||300 gp,mt:abe|Rubbery, dark and shaped like a cloak. It is not a cloak.
+Aboleth Mucus|R|part||400 gp,mt:abe|A jar of slime that makes skin feel cold and clammy.
+Intellect Devourer Husk|R|part||250 gp,mt:abe|A brain-shaped shell with four clawed legs. Empty, hopefully.
+Slaad Control Gem|V|part||2,000 gp,mt:abe|A gem pulled from a slaad's skull. Some say it can command the creature.
+Beholder Central Eye Lens|L|part||15,000 gp,mt:abe|The anti-magic eye. Wizards would kill for it, or study it at least.
+Elder Brain Fragment|L|part||20,000 gp,mt:abe|A slick lump of grey matter that still hums with psychic force.
+Giant Eagle Feather|U|part||25 gp,mt:bea|Huge, strong and perfect for fletching.
+Giant Shark Tooth|U|part||50 gp,q:1d4,mt:bea|Serrated and as big as your hand.
+Mammoth Tusk|R|part||250 gp,mt:bea|Ivory as long as a person is tall.
+Giant Ape Hide|R|part||200 gp,mt:bea|A shaggy hide big enough to roof a hut.
+Tyrannosaurus Tooth|V|part||1,000 gp,mt:bea|A curved fang as long as a dagger.
+Blessed Ash|M|part||5 sp,mt:cel|Pale ash that smells faintly of incense.
+Celestial Dust|C|part||25 gp,mt:cel|Glittering motes that drift upward if you let go.
+Pegasus Feather|U|part||100 gp,mt:cel|White and soft; lighter than it should be.
+Couatl Scale|R|part||400 gp,mt:cel|Iridescent feathered scale that gleams in any light.
+Deva Feather|V|part||2,500 gp,mt:cel|Silver-white; it glows softly in darkness.
+Halo Shard|V|part||3,000 gp,mt:cel|A sliver of solid light, warm to the touch.
+Ki-rin Horn|L|part||20,000 gp,mt:cel|A gold spiral horn humming with holy power.
+Scrap Gears|M|part||5 sp,q:1d6,mt:con|Brass and iron cogs, slightly bent.
+Modron Cog|C|part||10 gp,mt:con|A perfectly round cog. It turns by itself sometimes.
+Animated Armor Plate|C|part||15 gp,mt:con|A dented breastplate that twitches when struck.
+Homunculus Heart|U|part||100 gp,mt:con|A tiny heart in a jar of murky fluid.
+Flesh Golem Stitches|U|part||50 gp,mt:con|Thick thread and bits of whatever it held together.
+Helmed Horror Eye Gem|R|part||400 gp,mt:con|A glowing gem from the helm of an empty suit of armor.
+Clay Golem Clay|R|part||250 gp,mt:con|A lump of enchanted clay that slowly reforms when squashed.
+Stone Golem Core|V|part||2,500 gp,mt:con|A rune-carved stone that once powered a golem.
+Iron Golem Slag|V|part||1,500 gp,mt:con|Heavy, enchanted iron. A smith would treasure it.
+Ancient Construct Power Core|L|part||20,000 gp,mt:con|A humming crystal engine from a long-lost civilization.
+Pseudodragon Scale|C|part||10 gp,q:1d4,mt:dra|Tiny, shimmering red-brown scales.
+Faerie Dragon Wing|U|part||100 gp,mt:dra/fey|A butterfly-like wing that changes color in the light.
+Wyrmling Claw|U|part||75 gp,q:1d4,mt:dra|Small, but already sharp as a knife.
+Dragon Blood Vial|R|part||500 gp,mt:dra|Thick, warm and faintly smoking.
+Adult Dragon Horn|V|part||3,000 gp,mt:dra|A great curved horn. It still smells of the dragon's breath.
+Smoldering Cinders|M|part||1 sp,mt:ele|A handful of embers that never quite go out.
+Damp Silt|M|part||1 cp,mt:ele|Mud that stays wet no matter what.
+Mephit Dust|C|part||10 gp,mt:ele|A pouch of dust that crackles with elemental energy.
+Magmin Ember|C|part||15 gp,mt:ele|A glowing coal that burns without fuel.
+Gargoyle Stone Chip|U|part||50 gp,q:1d4,mt:ele|Grey stone that still flexes a little.
+Water Weird Essence|U|part||100 gp,mt:ele|A vial of water that coils like a snake.
+Xorn Gem Teeth|R|part||500 gp,q:1d4,mt:ele|Teeth that are actually gems the xorn hadn't digested yet.
+Air Elemental Breath|R|part||300 gp,mt:ele|A stoppered bottle that howls when opened.
+Fire Elemental Heart Coal|V|part||2,500 gp,mt:ele|A white-hot coal that burns through most containers.
+Earth Elemental Core|V|part||2,000 gp,mt:ele|A dense geode that pulls gently toward the ground.
+Djinni Breath Vial|L|part||15,000 gp,mt:ele|A swirling wind of pure elemental air in crystal.
+Wilted Fairy Ring Mushroom|M|part||5 sp,mt:fey|Picked from a circle. Probably shouldn't have been.
+Glittering Thistle|M|part||2 sp,mt:fey|A thistle with sparkling seed heads.
+Pixie Dust|C|part||25 gp,mt:fey|A pinch makes you feel light-headed and light-footed.
+Satyr Horn|C|part||10 gp,mt:fey|A small curled horn. Smells like wine.
+Sprite Wing|U|part||50 gp,mt:fey|A dragonfly-like wing that shimmers.
+Dryad Leaf|U|part||75 gp,mt:fey|An oak leaf that never wilts.
+Blink Dog Fur|U|part||50 gp,mt:fey|Golden fur that occasionally vanishes and reappears nearby.
+Hag Fingernail|R|part||300 gp,mt:fey|Long, cracked and black. Hags use these in curses.
+Redcap's Bloody Cap|R|part||250 gp,mt:fey|Soaked dark red. It never dries.
+Annis Hag Iron Tooth|V|part||1,500 gp,mt:fey|A tooth of solid iron, sharp enough to bite through armor.
+Archfey Glamour Petal|L|part||15,000 gp,mt:fey|A flower petal that shows whoever holds it their heart's desire.
+Sulfur-Stained Bone|M|part||5 sp,mt:fie|Yellowed bone that reeks of brimstone.
+Lemure Goo|M|part||1 sp,mt:fie|A slick of foul-smelling, half-melted devil flesh.
+Quasit Claw|C|part||15 gp,mt:fie|Tiny, wicked and still poisonous.
+Dretch Fang|C|part||5 gp,q:1d4,mt:fie|A yellow fang from a lowly demon.
+Barbed Devil Barb|U|part||75 gp,q:1d4,mt:fie|A hooked spine as long as a finger.
+Succubus Lock of Hair|R|part||400 gp,mt:fie|A lock of dark hair that smells of roses and smoke.
+Bone Devil Stinger|R|part||500 gp,mt:fie|A barbed tail stinger still dripping with venom.
+Ice Devil Mandible|V|part||2,000 gp,mt:fie|A frost-covered jaw that chills the air around it.
+Glabrezu Pincer|V|part||2,500 gp,mt:fie|A huge crab-like claw from a demon of temptation.
+Marilith Talon|L|part||15,000 gp,mt:fie|A clawed hand from one of a marilith's six arms.
+Giant Bone Splinter|M|part||1 sp,mt:gia|A shard of bone the size of a club.
+Huge Knucklebone|M|part||5 sp,mt:gia|Could be used as a stool.
+Giant Hair Rope|C|part||10 gp,mt:gia|A coil of rope braided from a giant's hair. Very strong.
+Ettin's Second Tooth|U|part||25 gp,mt:gia|The other head had better teeth.
+Hill Giant Belt Buckle|U|part||100 gp,mt:gia|Iron, plate-sized, and ugly.
+Frost Giant Beard Braid|R|part||250 gp,mt:gia|Rimed with frost that never melts.
+Fire Giant Ember Coal|R|part||300 gp,mt:gia|A coal from a fire giant's forge, still glowing.
+Cyclops Eye|R|part||400 gp,mt:gia|A single huge eye. It is very wet.
+Cloud Giant Silk|V|part||2,000 gp,mt:gia|Fabric as light as mist and stronger than steel.
+Storm Giant Tooth|L|part||10,000 gp,mt:gia|Crackles with lightning when it touches metal.
+Pouch of Trinkets|M|part||1 sp,mt:hum|Buttons, a thimble, a lucky stone and a tooth.
+Lucky Charm|M|part||5 cp,mt:hum|A rabbit's foot. It was not lucky for its owner.
+Wanted Poster|M|part||mt:hum|Someone else's face. Is there a reward?
+Thieves' Guild Token|C|part||5 gp,mt:hum|A coin with a mark that opens certain doors.
+Map Fragment|C|part||10 gp,mt:hum|Part of a map to somewhere. The rest is missing.
+Sealed Letter|C|part||mt:hum|Wax-sealed and addressed to someone important.
+Cultist Amulet|U|part||50 gp,mt:hum|An iron pendant marked with a forbidden symbol.
+Signet of a Minor House|U|part||100 gp,mt:hum|A noble family would want this back.
+Spellbook Pages|R|part||300 gp,mt:hum|Torn pages holding a wizard spell or two.
+Archmage's Focus Crystal|V|part||2,500 gp,mt:hum|A crystal that hums with stored arcane power.
+Royal Seal|L|part||15,000 gp,mt:hum|The seal of a kingdom. Dangerous to hold, priceless to the right people.
+Sticky Goo|M|part||1 cp,mt:ooz|Clings to everything. Will not wash off.
+Gray Ooze Acid|C|part||25 gp,mt:ooz|Eats through metal. Keep it in glass.
+Ochre Jelly Glob|U|part||50 gp,mt:ooz|A yellow lump that still tries to crawl away.
+Undigested Contents|U|part||mt:ooz|A pile of half-dissolved coins, buckles and bones from inside an ooze.
+Black Pudding Essence|R|part||400 gp,mt:ooz|A black, corrosive glob in a sealed jar.
+Oblex Memory Slime|V|part||2,000 gp,mt:ooz|A slime full of stolen memories. Touching it shows you strangers' lives.
+Primordial Ooze Nucleus|L|part||15,000 gp,mt:ooz|The pulsing core of something ancient and hungry.
+Shrieker Spores|M|part||1 sp,mt:pla|A puff of spores that squeals when shaken.
+Twig Blight Thorns|M|part||1 cp,q:1d6,mt:pla|Sharp and dry.
+Vine Blight Tendril|C|part||5 gp,mt:pla|A ropy vine that still tightens when touched.
+Myconid Spores|C|part||15 gp,mt:pla|Breathing them in fills your head with strange visions.
+Shambling Mound Compost|U|part||25 gp,mt:pla|Rich, rotten soil. Gardeners pay well for it.
+Violet Fungus Tendril|U|part||50 gp,mt:pla|Purple stalk that rots flesh it touches.
+Corpse Flower Petal|R|part||300 gp,mt:pla|A huge petal that smells of death.
+Treant Heartwood|V|part||2,500 gp,mt:pla|Ancient living wood. A druid's staff from it would be a wonder.
+World Tree Seed|L|part||20,000 gp,mt:pla|A seed that hums with life. Plant it carefully.
+Banshee's Wail|V|part||2,000 gp,mt:und|A jar that screams when uncorked.
+Vampire Ashes|V|part||2,500 gp,mt:und|Do not let them near fresh blood.
+Death Knight Ash|L|part||15,000 gp,mt:und|Black ash from a fallen champion. It never cools.
 Axe of the Dwarvish Lords|A|artifact|bw,cb||+3 axe of the first dwarf king; grants dwarven boons and a terrible curse.
 Book of Exalted Deeds|A|artifact|pc,hl||Holy text that elevates the good and burns the wicked.
 Book of Vile Darkness|A|artifact|cu||A tome of evil secrets that corrupts its reader.
@@ -624,15 +809,15 @@ Sword of Kas|A|artifact|cb|b:longsword|+3 sword forged for Vecna's betrayer; it 
 Wand of Orcus|A|artifact|cb,cu||The demon prince's skull-topped rod of death.
 `;
 
-const SRC_BY_CAT={wpn:'PHB',ammo:'PHB',armor:'PHB',shield:'PHB',gear:'PHB',tool:'PHB',clothes:'PHB',trade:'PHB',shoes:'Basic',pet:'Basic',junk:'Basic',art:'Basic'};
+const SRC_BY_CAT={wpn:'PHB',ammo:'PHB',armor:'PHB',shield:'PHB',gear:'PHB',tool:'PHB',clothes:'PHB',trade:'PHB',shoes:'Basic',pet:'Basic',junk:'Basic',art:'Basic',part:'Basic'};
 const BASIC_NAMES=new Set(['Mithral Ingot','Adamantine Ingot','Dragon Scales','Riding Saddle','Saddlebags','Animal Feed','Bit and Bridle','Leather Barding']);
 const PHB_OVERRIDE=new Set(['Basic Poison','Acid',"Alchemist's Fire",'Mastiff','Pony','Riding Horse','Mule','Draft Horse','Camel','Warhorse','Elephant']);
 
 const RAR=['M','C','U','R','V','L','A'];
 const RNAME={M:'Mundane',C:'Common',U:'Uncommon',R:'Rare',V:'Very rare',L:'Legendary',A:'Artifact'};
-const CATS={wpn:'Weapon',ammo:'Ammunition',armor:'Armor',shield:'Shield',gear:'Adventuring gear',tool:'Tool',clothes:'Clothing',shoes:'Footwear',pet:'Animal',poison:'Poison',bomb:'Explosive',trade:'Trade good',gem:'Gemstone',art:'Art object',junk:'Junk',mwpn:'Magic weapon',mammo:'Magic ammunition',marmor:'Magic armor',mshield:'Magic shield',heal:'Healing potion',potion:'Potion',scroll:'Scroll',ring:'Ring',rod:'Rod',staff:'Staff',wand:'Wand',wond:'Wondrous item',artifact:'Artifact'};
+const CATS={wpn:'Weapon',ammo:'Ammunition',armor:'Armor',shield:'Shield',gear:'Adventuring gear',tool:'Tool',clothes:'Clothing',shoes:'Footwear',pet:'Animal',poison:'Poison',bomb:'Explosive',trade:'Trade good',gem:'Gemstone',art:'Art object',junk:'Junk',part:'Monster part',mwpn:'Magic weapon',mammo:'Magic ammunition',marmor:'Magic armor',mshield:'Magic shield',heal:'Healing potion',potion:'Potion',scroll:'Scroll',ring:'Ring',rod:'Rod',staff:'Staff',wand:'Wand',wond:'Wondrous item',artifact:'Artifact'};
 const MAGIC_CATS=['mwpn','mammo','marmor','mshield','heal','potion','scroll','ring','rod','staff','wand','wond','artifact'];
-const ROLES={m:'Melee weapon',r:'Ranged weapon',fin:'Light / finesse',st:'Stealth',cb:'Combat',cbp:'Combat consumable',hl:'Healing',ap:'Apparel',sh:'Footwear',pc:'Peaceful',bw:'Brawling',cr:'Crafting',ex:'Explosive',pt:'Pet',qs:'Travel / quest',bt:'Capture',dt:'Detection',ut:'Utility',cu:'Cursed / prank'};
+const ROLES={m:'Melee weapon',r:'Ranged weapon',fin:'Light / finesse',st:'Stealth',cb:'Combat',cbp:'Combat consumable',hl:'Healing',ap:'Apparel',sh:'Footwear',pc:'Peaceful',bw:'Brawling',cr:'Crafting',ex:'Explosive',pt:'Pet',qs:'Travel / quest',bt:'Capture',dt:'Detection',ut:'Utility',cu:'Cursed / prank',su:'Single use'};
 
 const VARIANTS={
   dmg:['Acid','Cold','Fire','Force','Lightning','Necrotic','Poison','Psychic','Radiant','Thunder'],
@@ -679,8 +864,8 @@ const TIERS=[
 // Power is on the rarity scale: 0 mundane, 1 common, 2 uncommon, 3 rare, 4 very rare, 5 legendary.
 function power(level,tier){return .3+(level-1)*.2+tier.off}
 function gauss(c,sig){return RAR.map((_,i)=>Math.exp(-((i-c)**2)/(2*sig*sig)))}
-function scaleTier(tierId,level){
-  const t=TIERS.find(x=>x.id===tierId), raw=power(level,t), c=Math.min(raw,5);
+function scaleTier(tierId,level,rawOverride){
+  const t=TIERS.find(x=>x.id===tierId), raw=rawOverride!=null?rawOverride:power(level,t), c=Math.max(-1,Math.min(raw,5));
   const key=gauss(c,.65), fill=gauss(Math.min(raw-.7,5),.85);
   const kl=key[5]; key[6]=raw>=6?kl*.3:0; fill[6]=0;
   return {...t,level,raw,key,fill};
@@ -727,6 +912,9 @@ const BOXES=[
  {id:'melee',name:'Melee Weapon',blurb:'A level-appropriate melee weapon plus combat supplies',coins:.3,spells:'ch',
   pool:{cats:['heal','armor','shield','mshield'],tags:['m','cbp']},
   slots:[{label:'Melee weapon',tags:['m'],weapon:1,key:1},{label:'Combat aid',cats:['heal'],tags:['cbp']}]},
+ {id:'monster',name:'Monster',blurb:'What you find on a body: bones, fangs, hide and more',coins:.15,monster:1,noFiller:1,
+  pool:{cats:['part']},
+  slots:[{label:'Remains',cats:['part'],key:1}]},
  {id:'pacifists',name:"Pacifist's",blurb:'Protection, healing and ways to avoid a fight',coins:.5,spells:'ph',
   pool:{cats:['heal'],tags:['pc','hl']},
   slots:[{label:'Peacekeeper',tags:['pc'],key:1},{label:'Healing',cats:['heal']}]},
@@ -744,7 +932,7 @@ const BOXES=[
   slots:[{label:'Footwear',tags:['sh'],key:1},{label:'Footwear',tags:['sh']}]},
  {id:'weapon',name:'Weapon',blurb:'Weapons of any kind, with ammo or oils',coins:.3,spells:'c',
   pool:{cats:['wpn','mwpn','ammo','mammo']},
-  slots:[{label:'Weapon',tags:['m','r'],weapon:1,key:1},{label:'Weapon',tags:['m','r'],weapon:1},{label:'Extra',cats:['ammo','mammo'],tags:['cbp']}]}
+  slots:[{label:'Weapon',tags:['m','r'],weapon:1,key:1},{label:'Second weapon',tags:['m','r'],weapon:1,minTier:4},{label:'Extra',cats:['ammo','mammo'],tags:['cbp']}]}
 ];
 const BOXMAP=Object.fromEntries(BOXES.map(b=>[b.id,b]));
 
@@ -755,9 +943,9 @@ const BASE_ITEMS=[];(()=>{const seen=new Set();
   const [name,r,cat,tags,extra,desc]=line.split('|');
   let id=slug(name); while(seen.has(id)) id+='-x'; seen.add(id);
   const it={id,name,r,cat,tags:tags?tags.split(','):[],desc:desc||'',hb:false};
-  for(const x of (extra||'').split(',')){ if(!x)continue;
+  for(const x of (extra||'').split(/,(?!\d{3})/)){ if(!x)continue;
     if(x.startsWith('q:'))it.q=x.slice(2); else if(x.startsWith('b:'))it.base=x.slice(2);
-    else if(x.startsWith('v:'))it.v=x.slice(2); else if(x.startsWith('lv:'))it.lv=+x.slice(3); else it.value=x; }
+    else if(x.startsWith('v:'))it.v=x.slice(2); else if(x.startsWith('lv:'))it.lv=+x.slice(3); else if(x.startsWith('mt:'))it.mt=x.slice(3).split('/'); else it.value=x; }
   it.src = PHB_OVERRIDE.has(name)?'PHB':BASIC_NAMES.has(name)?'Basic':(SRC_BY_CAT[cat]||'DMG');
   BASE_ITEMS.push(it);
  }})();
@@ -765,15 +953,19 @@ const WEAPON_TAGS=Object.fromEntries(BASE_ITEMS.filter(i=>i.cat==='wpn').map(i=>
 WEAPON_TAGS['Darts']=WEAPON_TAGS['Dart'];
 const ALL_WEAPONS=BASE_ITEMS.filter(i=>i.cat==='wpn'&&i.name!=='Net'&&i.name!=='Darts').map(i=>i.name);
 
-
 /* ======================= STATE ======================= */
-// Homebrew items and table tweaks. The app sets these with setLootState().
-let state={tweaks:{banned:[],removed:{},added:{}},homebrew:[]};
+// Homebrew items, your monsters and table tweaks. The app sets these with setLootState().
+let state={tweaks:{banned:[],removed:{},added:{}},homebrew:[],monsters:[]};
+function normState(s){s=s||{};const t=s.tweaks||{};return {tweaks:{banned:Array.isArray(t.banned)?t.banned:[],removed:t.removed&&typeof t.removed==='object'?t.removed:{},added:t.added&&typeof t.added==='object'?t.added:{}},homebrew:Array.isArray(s.homebrew)?s.homebrew.filter(h=>h&&h.id&&h.name):[],monsters:Array.isArray(s.monsters)?s.monsters.filter(m=>m&&m.id&&m.name):[]}}
 function allItems(){return BASE_ITEMS.concat(state.homebrew.map(h=>({...h,hb:true,src:'Homebrew',tags:h.tags||[],boxes:h.boxes||[]})))}
 let ITEMS=allItems(), BYID=new Map(ITEMS.map(i=>[i.id,i]));
 function rebuild(){ITEMS=allItems();BYID=new Map(ITEMS.map(i=>[i.id,i]))}
-export function setLootState(s){state={tweaks:{banned:[],removed:{},added:{},...(s&&s.tweaks||{})},homebrew:(s&&s.homebrew)||[]};rebuild()}
-const toast=()=>{};
+export function setLootState(s){state=normState(s);rebuild()}
+export function lootMonsters(){return state.monsters}
+// Messages (like "Nothing else fits that slot.") go to the app through this.
+let toast=()=>{};
+export function onLootMessage(fn){toast=fn}
+
 /* ======================= RULES ======================= */
 function matchSpec(it,spec){ if(!spec)return false;
   if(spec.cats&&spec.cats.includes(it.cat))return true;
@@ -801,14 +993,25 @@ const pick=a=>a[rnd(a.length)];
 function dice(expr){ if(!expr)return 1; const m=String(expr).match(/^(\d+)d(\d+)$/); if(!m)return +expr||1; let s=0; for(let i=0;i<+m[1];i++)s+=1+rnd(+m[2]); return s }
 function weighted(w){const tot=w.reduce((a,b)=>a+b,0); if(!tot)return 0; let x=Math.random()*tot; for(let i=0;i<w.length;i++){x-=w[i]; if(x<0)return i} return w.length-1}
 
+const isWeapon=i=>i.cat==='wpn'||i.cat==='mwpn';
+const SU_CATS=['heal','potion','scroll','poison','bomb','mammo'];
+const isSingleUse=i=>SU_CATS.includes(i.cat)||i.tags.includes('su');
+// Bronze, Silver and Gold boxes get extra single-use items; Legendary and Celestial may hold a second weapon
+const EXTRA_SU={bronze:2,silver:2,gold:1};
+const TIER_IDX=Object.fromEntries(TIERS.map((t,i)=>[t.id,i]));
+function weaponCap(tierId){return TIER_IDX[tierId]>=4?2:1}
 function pickFor(box,slot,tier,used,ctx){
   let w=(slot.key?tier.key:tier.fill).slice();
   if(slot.bump){ const b=Array(7).fill(0); w.forEach((v,i)=>{b[Math.min(6,i+slot.bump)]+=v}); w=b; }
   if(slot.magic) w[0]=0;
   const target=weighted(w);
-  let cands = slot.any ? ITEMS.filter(i=>!state.tweaks.banned.includes(i.id)) : boxPool(box.id);
+  let cands = slot.ownOf ? ITEMS.filter(i=>(i.monsters||[]).includes(slot.ownOf)&&!state.tweaks.banned.includes(i.id))
+    : slot.any ? ITEMS.filter(i=>!state.tweaks.banned.includes(i.id)) : boxPool(box.id);
+  if(slot.mtype) cands=cands.filter(i=>{const t=partTypes(i); return i.cat!=='part'||!t.length||t.includes(slot.mtype)});
   cands=cands.filter(i=>!used.has(i.id) && (slot.any||!slot.filler?slotFits(i,slot):true));
   if(slot.magic) cands=cands.filter(i=>i.r!=='M');
+  if(ctx&&ctx.weapons>=ctx.weaponCap) cands=cands.filter(i=>!isWeapon(i));
+  if(slot.su) cands=cands.filter(isSingleUse);
   if(ctx&&ctx.ammo) cands=cands.filter(i=>(i.cat!=='ammo'||i.name===ctx.ammo)&&(i.id!=='arrow-of-slaying'||ctx.ammo==='Arrows'));
   if(!cands.length) return null;
   const by={}; for(const c of cands)(by[c.r]=by[c.r]||[]).push(c);
@@ -858,20 +1061,95 @@ function rollCoins(box,tier){
   let sp=gp<60?dice('3d6')*(box.coins>=1?2:1):0;
   return {gp,pp,sp};
 }
-function openBox(boxId,tierId,level){
-  const box=BOXMAP[boxId], tier=scaleTier(tierId,level); const used=new Set(); const items=[]; const ctx={};
-  for(const s of box.slots){ const it=pickFor(box,s,tier,used,ctx); if(it){used.add(it.id); items.push(makeEntry(it,s,box,ctx));} }
-  // homebrew & extras: filler from whole pool
-  if(!box.noFiller){ for(let i=0;i<tier.filler;i++){ const s={label:'Bonus',filler:1}; const it=pickFor(box,s,tier,used,ctx); if(it){used.add(it.id); items.push(makeEntry(it,s,box,ctx));} } }
-  return {box:boxId,tier:tierId,level,items,ctx,coins:rollCoins(box,tier),at:Date.now()};
+// Monster boxes ignore party level: each rarity uses a fixed level for its power.
+const MONSTER_LEVEL={bronze:1,silver:3,gold:6,platinum:10,legendary:14,celestial:18};
+const MTYPES={abe:'Aberration',bea:'Beast',cel:'Celestial',con:'Construct',dra:'Dragon',ele:'Elemental',fey:'Fey',fie:'Fiend',gia:'Giant',hum:'Humanoid',mon:'Monstrosity',ooz:'Ooze',pla:'Plant',und:'Undead'};
+const partTypes=i=>i.mt||i.mtypes||[];
+// chance (before the roll bonus) that the body carries a weapon (w) or coins (c)
+const MT_CHANCE={hum:{w:.2,c:.35},gia:{w:.1,c:.25},und:{w:.10,c:.12},fie:{w:.08,c:.10},dra:{w:.03,c:.30},cel:{w:.06,c:.05},con:{w:.04,c:.03},mon:{w:.03,c:.05},bea:{w:0,c:.02}};
+const MT_DEFAULT={w:.02,c:.03};
+// Investigation total -> how many things you find and how good they are
+const BANDS=[
+  {max:4, label:'Botched search', items:'0–1 items, mostly ruined', n:()=>rnd(2), shift:-1.5, mult:.3},
+  {max:9, label:'Quick search', items:'1 item, lower quality', n:()=>1, shift:-.7, mult:.6},
+  {max:14,label:'Decent search', items:'1–2 items', n:()=>1+rnd(2), shift:0, mult:1},
+  {max:19,label:'Careful search', items:'2 items', n:()=>2, shift:.3, mult:1.3},
+  {max:24,label:'Thorough search', items:'2–3 items, better quality', n:()=>2+rnd(2), shift:.7, mult:1.6},
+  {max:999,label:'Expert search', items:'3 items, best quality', n:()=>3, shift:1.1, mult:2}
+];
+const bandFor=roll=>BANDS.find(b=>roll<=b.max);
+function monsterOpts(){return {mtype:'bea',roll:10,monsterId:''}}
+function findMon(id){return id?state.monsters.find(m=>m.id===id):null}
+function openMonster(box,tierId,opts){
+  opts=opts||monsterOpts();
+  const mon=findMon(opts.monsterId), mtype=mon?mon.type:opts.mtype, roll=opts.roll, band=bandFor(roll);
+  const level=MONSTER_LEVEL[tierId], raw=scaleTier(tierId,level).raw+band.shift, tier=scaleTier(tierId,level,raw);
+  const used=new Set(); const items=[]; const ctx={weapons:0,weaponCap:1};
+  const ch=MT_CHANCE[mtype]||MT_DEFAULT;
+  const typeSlot={label:'Remains',cats:['part'],key:1,mtype};
+  const ownSlot=mon?{label:mon.name,ownOf:mon.id,key:1}:null;
+  const n=band.n();
+  for(let i=0;i<n;i++){
+    let s=null,it=null;
+    if(!ctx.weapons && Math.random()<ch.w*band.mult){ s={label:'Carried weapon',weapon:1,any:1,tags:['m','r']}; it=pickFor(box,s,tier,used,ctx); }
+    if(!it && ownSlot && (mon.onlyOwn || Math.random()<.65)){ s=ownSlot; it=pickFor(box,s,tier,used,ctx); }
+    if(!it && !(mon&&mon.onlyOwn)){ s=typeSlot; it=pickFor(box,s,tier,used,ctx); if(!it){ s={...typeSlot,mtype:null}; it=pickFor(box,s,tier,used,ctx); } }
+    if(!it) break;
+    used.add(it.id); if(isWeapon(it))ctx.weapons++; items.push(makeEntry(it,s,box,ctx));
+  }
+  const rich=['hum','gia','dra'].includes(mtype);
+  const coins=Math.random()<ch.c*band.mult?rollCoins({...box,coins:rich?.35:.15},tier):null;
+  return {box:box.id,tier:tierId,level,raw,anyLevel:1,monster:1,mtype,monName:mon?mon.name:'',roll,band:band.label,items,ctx,coins,at:Date.now()};
+}
+function openBox(boxId,tierId,level,opts){
+  if(BOXMAP[boxId].monster) return openMonster(BOXMAP[boxId],tierId,opts);
+  const box=BOXMAP[boxId], tier=scaleTier(tierId,level); const used=new Set(); const items=[];
+  const ctx={weapons:0,weaponCap:weaponCap(tierId)};
+  const add=(it,s)=>{used.add(it.id); if(isWeapon(it))ctx.weapons++; items.push(makeEntry(it,s,box,ctx));};
+  for(const s of box.slots){
+    if(s.minTier && TIER_IDX[tierId]<s.minTier) continue;
+    let it=pickFor(box,s,tier,used,ctx);
+    // a box that promises a weapon always gets one, even if its table was trimmed
+    if(!it && s.weapon && ctx.weapons<ctx.weaponCap) it=pickFor(box,{...s,any:1},tier,used,ctx);
+    if(it) add(it,s);
+  }
+  if(!box.noFiller){
+    for(let i=0;i<tier.filler;i++){ const s={label:'Bonus',filler:1}; const it=pickFor(box,s,tier,used,ctx); if(it) add(it,s); }
+    const n=box.id==='shoe'?0:(EXTRA_SU[tierId]||0);
+    for(let i=0;i<n;i++){
+      const s={label:'Single use',filler:1,su:1};
+      // stay on theme when the box's own table has single-use items, otherwise use any potion, scroll or the like
+      const it=pickFor(box,s,tier,used,ctx)||pickFor(box,{...s,any:1},tier,used,ctx);
+      if(it) add(it,s);
+    }
+  }
+  return {box:boxId,tier:tierId,level,items:trimLowLevel(items,tierId,level),ctx,coins:rollCoins(box,tier),at:Date.now()};
+}
+// Bronze and Silver boxes at party levels 1-3 hold only 1-3 items.
+// A promised weapon is kept first, then the box's main slot, its other slots, single-use items, and bonus picks.
+function trimLowLevel(items,tierId,level){
+  if(level>3 || TIER_IDX[tierId]>1) return items;
+  const n=1+rnd(3); if(items.length<=n) return items;
+  const rank=it=>{const s=it.slotRef||{}; if(s.weapon)return 0; if(s.key)return 1; if(s.su)return 3; if(s.filler)return 4; return 2};
+  const keep=new Set(items.map((it,i)=>({i,r:rank(it)})).sort((a,b)=>a.r-b.r||a.i-b.i).slice(0,n).map(x=>x.i));
+  return items.filter((_,i)=>keep.has(i));
 }
 function rerollAt(res,idx){
-  const box=BOXMAP[res.box], tier=scaleTier(res.tier,res.level||1);
+  const box=BOXMAP[res.box], tier=res.monster?scaleTier(res.tier,res.level,res.raw):scaleTier(res.tier,res.level||1);
   const used=new Set(res.items.map(i=>i.id)); const old=res.items[idx]; const s=old.slotRef||{label:old.slot,filler:1};
   const ctx=res.ctx||{}; if(s.weapon) delete ctx.ammo;
+  ctx.weaponCap=weaponCap(res.tier); ctx.weapons=res.items.filter((x,j)=>j!==idx&&isWeapon(x)).length;
   const it=pickFor(box,s,tier,used,ctx); if(!it){toast('Nothing else fits that slot.');return}
   res.items[idx]=makeEntry(it,s,box,ctx);
 }
 
+
+// Odds text for a Monster box, which ignores party level (same wording as the Loot Box Forge app).
+export function monsterOddsText(tierId,roll){
+  const t=TIERS.find(x=>x.id===tierId), band=bandFor(roll);
+  const raw=scaleTier(tierId,MONSTER_LEVEL[tierId]).raw+band.shift, tt=scaleTier(tierId,1,raw), tot=tt.key.reduce((a,b)=>a+b,0);
+  const pc=tt.key.map((w,i)=>({r:RAR[i],p:Math.round(w/tot*100)})).filter(x=>x.p>=5).sort((a,b)=>b.p-a.p);
+  return `Monster loot ignores party level. With this roll, a ${t.name} monster's best find is `+pc.map(x=>`${RNAME[x.r].toLowerCase()} ${x.p}%`).join(', ')+'.';
+}
 export function lootItems(){return ITEMS}
-export { RAR, RNAME, CATS, TIERS, BOXES, BOXMAP, MAGIC_CATS, openBox, rerollAt, oddsText, MAX_LEVEL };
+export { RAR, RNAME, CATS, TIERS, BOXES, BOXMAP, MAGIC_CATS, MTYPES, BANDS, MONSTER_LEVEL, bandFor, openBox, rerollAt, oddsText, MAX_LEVEL };

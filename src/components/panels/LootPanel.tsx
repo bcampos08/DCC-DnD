@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { BOXES, TIERS, BOXMAP, RNAME, CATS, openBox, rerollAt, oddsText, MAX_LEVEL, type LootResult } from '../../loot/engine';
+import { useEffect, useMemo, useState } from 'react';
+import { BOXES, TIERS, BOXMAP, RNAME, CATS, MTYPES, openBox, rerollAt, oddsText, monsterOddsText, bandFor, onLootMessage, MAX_LEVEL, type LootResult } from '../../loot/engine';
+import { useMonsters } from '../../lib/monsters';
 import { useCampaign } from '../../store';
 import { useUI } from '../../ui';
 import { uid } from '../../lib/id';
@@ -8,6 +9,13 @@ import type { LootItem } from '../../types';
 import { ItemDetails } from '../SrdText';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
+// SRD type text like "humanoid (goblinoid)" or "swarm of Tiny beasts" -> Loot Box creature type.
+export function mtypeOf(type?: string): string | null {
+  const t = (type ?? '').toLowerCase();
+  for (const [k, v] of Object.entries(MTYPES)) if (t.includes(v.toLowerCase())) return k;
+  return null;
+}
+const resultTitle = (r: LootResult) => r.monster ? `${r.monName || MTYPES[r.mtype!]} Loot` : `${BOXMAP[r.box].name} Box`;
 const coinText = (c: LootResult['coins']) => {
   if (!c) return '';
   if (c.copper != null) return `${fmt(c.copper)} cp`;
@@ -26,9 +34,29 @@ export default function LootPanel() {
   const [toPick, setTo] = useState('');
   const to = chars.some(c => c.id === toPick) ? toPick : ''; // falls back to the party
   const [, force] = useState(0);
+  // Monster box: creature type, an optional monster from the current scene, and the investigation roll.
+  const [mtype, setMtype] = useState('bea');
+  const [roll, setRoll] = useState(10);
+  const [fromScene, setFromScene] = useState('');
+  const monsters = useMonsters();
+  const sceneId = useCampaign(s => s.activeSceneId);
+  const scenes = useCampaign(s => s.scenes);
+  const nearby = useMemo(() => {
+    const ids = new Set((scenes.find(s => s.id === sceneId)?.tokens ?? []).map(t => t.monsterId).filter(Boolean) as string[]);
+    return monsters.filter(m => ids.has(m.id) && mtypeOf(m.type)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [scenes, sceneId, monsters]);
+  const picked_ = nearby.find(m => m.id === fromScene);
+  const mt = picked_ ? mtypeOf(picked_.type)! : mtype;
+  const isMon = !!BOXMAP[box].monster;
+  const band = bandFor(roll);
+  useEffect(() => { onLootMessage(m => useUI.getState().toast(m)); }, []);
+  const setRollC = (v: number) => setRoll(Math.max(0, Math.min(40, Number.isFinite(v) ? Math.round(v) : 10)));
   const setLevel = (v: number) => st.set(d => { d.settings.partyLevel = Math.max(1, Math.min(MAX_LEVEL, v)); });
 
-  const open = () => { const r = openBox(box, tier, level); setRes(r); setPicked(new Set(r.items.map((_, i) => i))); setCoins(true); };
+  const open = () => {
+    const r = openBox(box, tier, level, { mtype: mt, roll });
+    if (r.monster && picked_) r.monName = picked_.name;
+    setRes(r); setPicked(new Set(r.items.map((_, i) => i))); setCoins(true); };
   const toggle = (i: number) => setPicked(p => { const n = new Set(p); if (n.has(i)) n.delete(i); else n.add(i); return n; });
   const chosen = (): LootItem[] => {
     if (!res) return [];
@@ -46,7 +74,7 @@ export default function LootPanel() {
   };
   const show = () => {
     const items = chosen();
-    if (items.length) send({ type: 'popup', p: { kind: 'loot', title: `${TIERS.find(t => t.id === tier)!.name} ${BOXMAP[box].name} Box`, items, at: Date.now() } });
+    if (items.length && res) send({ type: 'popup', p: { kind: 'loot', title: `${TIERS.find(t => t.id === res.tier)!.name} ${resultTitle(res)}`, items, at: Date.now() } });
   };
 
   return (
@@ -59,25 +87,49 @@ export default function LootPanel() {
       <div className="tiers">
         {TIERS.map(t => <button key={t.id} className={`tier t-${t.id}` + (t.id === tier ? ' on' : '')} onClick={() => setTier(t.id)}><b>{t.name}</b><small>{t.lv}</small></button>)}
       </div>
-      <div className="row gap level-row">
-        <span>Party level</span>
-        <button className="btn sm" onClick={() => setLevel(level - 1)} aria-label="Lower level">−</button>
-        <b className="lvl">{level}</b>
-        <button className="btn sm" onClick={() => setLevel(level + 1)} aria-label="Raise level">+</button>
-        <input type="range" min={1} max={MAX_LEVEL} value={level} onChange={e => setLevel(+e.target.value)} className="grow" aria-label="Party level" />
-      </div>
-      <p className="hint">{oddsText(tier, level)}</p>
+      {isMon ? (
+        <div className="mon-loot">
+          <div className="sub-h">Creature type</div>
+          <div className="chips">
+            {Object.entries(MTYPES).map(([k, v]) => <button key={k} className={'chip' + (k === mt ? ' on' : '')} disabled={!!picked_} onClick={() => setMtype(k)}>{v}</button>)}
+          </div>
+          {nearby.length > 0 && (
+            <label className="row gap for-row">From this scene
+              <select className="grow" value={fromScene} onChange={e => setFromScene(e.target.value)} aria-label="Monster from this scene">
+                <option value="">Any {MTYPES[mtype].toLowerCase()}</option>
+                {nearby.map(m => <option key={m.id} value={m.id}>{m.name} ({MTYPES[mtypeOf(m.type)!]})</option>)}
+              </select>
+            </label>
+          )}
+          <div className="sub-h">Investigation roll</div>
+          <div className="row gap level-row">
+            <button className="btn sm" onClick={() => setRollC(roll - 1)} aria-label="Lower roll">−</button>
+            <input className="roll-in" type="number" min={0} max={40} value={roll} onChange={e => setRollC(+e.target.value)} aria-label="Investigation roll total" />
+            <button className="btn sm" onClick={() => setRollC(roll + 1)} aria-label="Raise roll">+</button>
+            <span className="muted sm grow">{band.label}: {band.items}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="row gap level-row">
+          <span>Party level</span>
+          <button className="btn sm" onClick={() => setLevel(level - 1)} aria-label="Lower level">−</button>
+          <b className="lvl">{level}</b>
+          <button className="btn sm" onClick={() => setLevel(level + 1)} aria-label="Raise level">+</button>
+          <input type="range" min={1} max={MAX_LEVEL} value={level} onChange={e => setLevel(+e.target.value)} className="grow" aria-label="Party level" />
+        </div>)}
+      <p className="hint">{isMon ? monsterOddsText(tier, roll) : oddsText(tier, level)}</p>
       <label className="row gap for-row">This box is for
         <select className="grow" value={to} onChange={e => setTo(e.target.value)} aria-label="Who the loot is for">
           <option value="">The party</option>
           {chars.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </label>
-      <button className="btn primary big" onClick={open}>Open {TIERS.find(t => t.id === tier)!.name} {BOXMAP[box].name} box</button>
+      <button className="btn primary big" onClick={open}>{isMon ? `Search the ${picked_?.name ?? MTYPES[mt]} (${TIERS.find(t => t.id === tier)!.name}, roll ${roll})` : `Open ${TIERS.find(t => t.id === tier)!.name} ${BOXMAP[box].name} box`}</button>
 
       {res && (
         <div className={`loot-result t-${res.tier}`}>
-          <div className="lr-head"><b>{BOXMAP[res.box].name} Box</b><span>{TIERS.find(t => t.id === res.tier)!.name} · Level {res.level}</span></div>
+          <div className="lr-head"><b>{resultTitle(res)}</b><span>{TIERS.find(t => t.id === res.tier)!.name} · {res.monster ? `Investigation ${res.roll}` : `Level ${res.level}`}</span></div>
+          {res.monster && <div className="lr-band"><b>{res.band}</b>{res.monName ? ` · ${MTYPES[res.mtype!]}` : ''}</div>}
           {res.coins && <label className="lr-item coins"><input type="checkbox" checked={coins} onChange={e => setCoins(e.target.checked)} /> <b>{coinText(res.coins)}</b></label>}
           {res.items.map((it, i) => (
             <div key={i} className="lr-item">
@@ -91,7 +143,7 @@ export default function LootPanel() {
               <button className="btn sm" onClick={() => { rerollAt(res, i); force(x => x + 1); }}>Reroll</button>
             </div>
           ))}
-          {!res.items.length && <p className="empty">This box came up empty.</p>}
+          {!res.items.length && <p className="empty">{res.monster ? 'You find nothing worth keeping.' : 'This box came up empty.'}</p>}
           <div className="lr-actions">
             <div className="row gap">
               <button className="btn sm" onClick={() => { setPicked(new Set(res.items.map((_, i) => i))); setCoins(true); }}>All</button>
