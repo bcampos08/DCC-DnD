@@ -2,6 +2,8 @@ import Pic from '../components/Pic';
 import { useEffect, useRef, useState } from 'react';
 import MapCanvas from '../components/MapCanvas';
 import RollCard from '../components/RollCard';
+import DiceThrow from '../components/DiceThrow';
+import { DICE_HOLD_MS, DICE_LAND_MS } from '../lib/diceAnim';
 import { channel, send, type LootReveal, type Measure, type Msg, type Ping, type Reveal, type TableState } from '../lib/sync';
 import type { Camera, Token } from '../types';
 import { fitCamera } from './DMView';
@@ -16,6 +18,7 @@ export default function TableView() {
   const [pings, setPings] = useState<Ping[]>([]);
   const [popups, setPopups] = useState<(Reveal | LootReveal)[]>([]);
   const [fx, setFx] = useState<FxEvent[]>([]);
+  const [throws, setThrows] = useState<Reveal[]>([]);
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [camera, setCamera] = useState<Camera | null>(null);
   const lastNonce = useRef(-1);
@@ -31,8 +34,17 @@ export default function TableView() {
       if (m.type === 'fx') setFx(list => [...list.slice(-30), m.fx]);
       if (m.type === 'ping') setPings(ps => [...ps.filter(p => Date.now() - p.at < 2500), m.p]);
       if (m.type === 'popup') {
-        setPopups(ps => [...ps.slice(-3), m.p]);
-        setTimeout(() => setPopups(ps => ps.filter(p => p !== m.p)), m.p.kind === 'loot' ? 20000 : 7000);
+        const p = m.p;
+        // Animated rolls: dice tumble first, then the result card appears as they land.
+        const wait = p.kind === 'roll' && p.anim ? DICE_LAND_MS + 100 : 0;
+        if (p.kind === 'roll' && p.anim) {
+          setThrows([p]); // a new roll replaces dice still on the table
+          setTimeout(() => setThrows(ts => ts.filter(t => t !== p)), DICE_LAND_MS + DICE_HOLD_MS + 700);
+        }
+        setTimeout(() => {
+          setPopups(ps => [...ps.slice(-3), p]);
+          setTimeout(() => setPopups(ps => ps.filter(x => x !== p)), p.kind === 'loot' ? 20000 : 7000);
+        }, wait);
       }
     };
     channel?.addEventListener('message', onMsg);
@@ -105,6 +117,7 @@ export default function TableView() {
         </div>
       )}
       {current && <div className="now-up">{label(current)}’s turn</div>}
+      <div className="dice-layer">{throws.map((t, i) => <DiceThrow key={t.at + t.roll.id} roll={t.roll} row={throws.length - 1 - i} />)}</div>
       <div className="table-popups">
         {popups.map(p => p.kind === 'roll'
           ? <div key={p.at} className="popup"><RollCard r={p.roll} big /></div>

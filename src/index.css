@@ -128,10 +128,12 @@ h3, h4 { margin: 0; }
 .hidden-tag { background: #3b0764; color: #e9d5ff; }
 .crit-tag { background: #14532d; color: #bbf7d0; }
 .fumble-tag { background: #7f1d1d; color: #fecaca; }
-.roll-card.big { padding: 12px 18px; }
-.roll-card.big .rc-total { font-size: 3rem; }
-.roll-card.big .rc-top { font-size: 1.1rem; }
-.roll-card.big .rc-parts { font-size: 1.2rem; }
+.roll-card.big { padding: 16px 24px; border-left-width: 6px; border-radius: 14px; }
+.roll-card.big .rc-total { font-size: 4.4rem; }
+.roll-card.big .rc-top { font-size: 1.5rem; gap: 10px; }
+.roll-card.big .rc-break { font-size: 1.15rem; }
+.roll-card.big .rc-parts { font-size: 1.55rem; margin-top: 6px; padding-top: 6px; }
+.roll-card.big .tag { font-size: 1rem; }
 
 /* token card */
 .token-card { position: absolute; right: 12px; top: 12px; width: 330px; max-height: calc(100% - 24px); overflow-y: auto; background: rgba(31, 27, 22, .97); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); z-index: 6; }
@@ -284,8 +286,8 @@ h3, h4 { margin: 0; }
 .turn small { font-size: .7rem; color: var(--warn); }
 .turn.now { background: var(--accent); color: var(--accent-fg); transform: scale(1.08); }
 .now-up { position: absolute; top: 62px; left: 50%; transform: translateX(-50%); font-family: var(--display); font-size: 1.8rem; font-weight: 800; color: #fde68a; text-shadow: 0 2px 10px #000, 0 0 2px #000; pointer-events: none; }
-.table-popups { position: absolute; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; max-width: 46vw; }
-.popup { animation: popin .35s ease both; min-width: 300px; }
+.table-popups { position: absolute; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-end; max-width: 52vw; }
+.popup { animation: popin .35s ease both; min-width: 420px; }
 .popup .roll-card { background: rgba(31, 27, 22, .95); box-shadow: 0 10px 30px rgba(0, 0, 0, .6); }
 .loot-pop { background: rgba(31, 27, 22, .96); border: 1px solid var(--accent); border-radius: 14px; padding: 14px 20px; font-size: 1.2rem; box-shadow: 0 10px 40px rgba(214, 162, 74, .3); }
 .loot-pop h3 { font-family: var(--display); color: var(--accent); font-size: 1.6rem; margin-bottom: 6px; }
@@ -295,7 +297,7 @@ h3, h4 { margin: 0; }
 
 @media (max-width: 1100px) {
   .side { width: 340px; }
-  .dice-tray { width: 290px; }
+  .dice-tray { width: 260px; }
 }
 .tc-more summary { cursor: pointer; font-weight: 700; font-size: .88rem; color: var(--muted); margin-bottom: 6px; }
 .srd-credit { padding: 10px 14px 16px; font-size: .75rem; color: var(--muted); }
@@ -500,3 +502,50 @@ h3, h4 { margin: 0; }
 .roll-in { width: 4.2ch; text-align: center; font-family: var(--display); font-size: 1.2rem; padding: 2px 4px; }
 .lr-band { padding: 6px 12px; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); }
 .lr-band b { color: var(--fg); }
+
+/* Dice tumbling onto the table screen */
+.dice-layer { position: absolute; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+.dice-throw { position: absolute; left: 38%; bottom: calc(10vh + var(--row) * 17vmin); transform: translateX(-50%); display: flex; gap: 2.2vmin 1.8vmin; align-items: flex-end; justify-content: center; flex-wrap: wrap; max-width: 58vw; transition: opacity .6s ease, transform .6s ease; }
+.dice-throw.gone { opacity: 0; transform: translate(-50%, 3vh); }
+.die3 { width: 12vmin; height: 12vmin; min-width: 70px; min-height: 70px; position: relative; animation: dice-throw 1.15s cubic-bezier(.2, .7, .3, 1) both; filter: drop-shadow(0 1.2vmin 1.4vmin rgba(0, 0, 0, .55)); }
+.die3 svg { width: 100%; height: 100%; overflow: visible; }
+.die3 .body > * { fill: #f4ead7; stroke: #6b5636; stroke-width: 3; stroke-linejoin: round; }
+.die3 .body .facet { fill: none; stroke: rgba(107, 86, 54, .45); stroke-width: 2; }
+.die3 text { font-family: var(--display); font-weight: 800; font-size: 40px; fill: #2a2118; text-anchor: middle; dominant-baseline: central; }
+.die3 text.two { font-size: 34px; }
+.die3 text.three { font-size: 26px; }
+.die3 small { position: absolute; left: 0; right: 0; bottom: -2.4vmin; text-align: center; font-size: max(11px, 1.5vmin); color: rgba(255, 255, 255, .6); font-weight: 700; opacity: 0; transition: opacity .3s; }
+.die3.landed small { opacity: 1; }
+.die3.dmg .body > * { fill: #b4362b; stroke: #5e1610; }
+.die3.dmg .body .facet { stroke: rgba(255, 220, 210, .35); }
+.die3.dmg text { fill: #fff4ee; }
+.die3.drop { opacity: .35; transform: scale(.85); transition: opacity .3s, transform .3s; }
+.die3.landed:not(.drop) { animation: dice-throw 1.15s cubic-bezier(.2, .7, .3, 1) both, dice-settle .35s ease 1; }
+.die3.nat20 .body > :first-child { fill: #d8f5c8; stroke: #2f8a3a; }
+.die3.nat20 { filter: drop-shadow(0 0 2vmin rgba(90, 220, 110, .9)); animation: dice-throw 1.15s cubic-bezier(.2, .7, .3, 1) both, dice-glow 1s ease-in-out infinite alternate; }
+.die3.nat1 .body > :first-child { fill: #3a1d1b; stroke: #c0392b; }
+.die3.nat1 text { fill: #ff8a7a; }
+.die3.nat1 { filter: drop-shadow(0 0 2vmin rgba(220, 60, 50, .8)); }
+.dice-more { align-self: center; color: #fff; font-weight: 700; font-size: 2vmin; text-shadow: 0 2px 6px #000; }
+@keyframes dice-throw {
+  0% { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--spin) * -1)) scale(.55); opacity: 0; }
+  12% { opacity: 1; }
+  55% { transform: translate(calc(var(--dx) * .12), -6vh) rotate(calc(var(--spin) * -.2)) scale(1.08); }
+  72% { transform: translate(calc(var(--dx) * .04), 0) rotate(calc(var(--spin) * -.06)) scale(1); }
+  84% { transform: translate(calc(var(--dx) * .015), -1.6vh) rotate(calc(var(--spin) * -.02)) scale(1.02); }
+  100% { transform: translate(0, 0) rotate(var(--tilt)) scale(1); opacity: 1; }
+}
+@keyframes dice-settle { 0% { scale: 1; } 40% { scale: 1.12; } 100% { scale: 1; } }
+@keyframes dice-glow { from { filter: drop-shadow(0 0 1vmin rgba(90, 220, 110, .6)); } to { filter: drop-shadow(0 0 3vmin rgba(90, 220, 110, 1)); } }
+@media (prefers-reduced-motion: reduce) { .die3 { animation-duration: .01s !important; } }
+
+/* compact roll cards in the DM's dice tray (the Log tab keeps full size) */
+.dice-tray { width: 290px; }
+.dice-tray .roll-card { padding: 4px 8px; margin-bottom: 4px; border-left-width: 3px; }
+.dice-tray .rc-top { font-size: .74rem; }
+.dice-tray .rc-total { font-size: 1.25rem; }
+.dice-tray .rc-break { font-size: .72rem; }
+.dice-tray .rc-parts { font-size: .78rem; }
+.dice-tray .tag { font-size: .66rem; padding: 0 4px; }
+.dice-tray .tray-rolls { max-height: 34vh; }
+.dice-tray .seg button { font-size: .78rem; padding: 4px 7px; white-space: nowrap; }

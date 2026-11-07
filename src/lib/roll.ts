@@ -2,13 +2,21 @@ import { useCampaign } from '../store';
 import { useUI } from '../ui';
 import { makeRoll, critDice, type Adv } from './dice';
 import { send } from './sync';
+import { diceSound } from './fx/sound';
+import { DICE_LAND_MS } from './diceAnim';
 import type { RollResult } from '../types';
 
 interface Opts { hidden?: boolean; adv?: Adv; annotate?: (r: RollResult) => void }
 
 function publish(r: RollResult) {
   useCampaign.getState().addRoll(r);
-  if (!r.hidden) send({ type: 'popup', p: { kind: 'roll', roll: r, at: Date.now() } });
+  if (!r.hidden) {
+    const s = useCampaign.getState().settings;
+    const anim = s.diceFx !== false && !!r.dice?.length;
+    send({ type: 'popup', p: { kind: 'roll', roll: r, at: Date.now(), anim } });
+    // The rattle plays from this computer, timed to the dice landing on the table screen.
+    if (anim && s.fxSound !== false) diceSound(s.fxVolume ?? 0.7, Math.min(12, r.dice!.length + (r.parts ?? []).reduce((n, p) => n + (p.dice?.length ?? 0), 0)), DICE_LAND_MS);
+  }
   return r;
 }
 

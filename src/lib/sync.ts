@@ -9,7 +9,7 @@ import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scen
 // dmOnly: measuring while moving hidden tokens, so players must not see it.
 export interface Measure { ax: number; ay: number; bx: number; by: number; feet: number; dmOnly?: boolean }
 export interface Ping { x: number; y: number; at: number }
-export interface Reveal { kind: 'roll'; roll: RollResult; at: number }
+export interface Reveal { kind: 'roll'; roll: RollResult; at: number; anim?: boolean } // anim: dice tumble on the table first
 export interface LootReveal { kind: 'loot'; title: string; items: LootItem[]; at: number }
 export interface TableState {
   scene: Scene | null;

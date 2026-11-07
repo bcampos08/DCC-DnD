@@ -156,3 +156,22 @@ export function testSound(volume: number) {
   const c = audio(volume);
   if (c) chime(c.currentTime + 0.02);
 }
+
+// Dice rattling across the table, then settling. count: how many dice; landMs: when they stop.
+export function diceSound(volume: number, count: number, landMs: number) {
+  const c = audio(volume);
+  if (!c) return;
+  const t0 = c.currentTime + 0.03, land = t0 + landMs / 1000;
+  const n = Math.min(6, Math.max(1, count));
+  for (let d = 0; d < n; d++) {
+    // bounces get closer together and quieter as the die slows down
+    // a few slow tumbles, then quicker, quieter bounces right before it stops
+    let t = t0 + d * 0.04 + Math.random() * 0.05, peak = 0.5 / Math.sqrt(n);
+    for (let k = 0; k < 12 && t < land; k++) {
+      noise(t, 0.035, peak, 'bandpass', 2400 + Math.random() * 1800, 1600, 3, 0.002);
+      tone(t, 'triangle', 900 + Math.random() * 700, 600, 0.04, peak * 0.25, 0.002);
+      t += Math.max(0.05, (land - t) * 0.35 + Math.random() * 0.03); peak *= 0.88;
+    }
+    noise(land + d * 0.012, 0.05, 0.35 / Math.sqrt(n), 'bandpass', 1800, 1200, 2.5, 0.002);
+  }
+}

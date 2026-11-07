@@ -186,6 +186,7 @@ export interface RollResult {
   crit?: boolean;
   fumble?: boolean;
   parts?: RollResult[]; // e.g. attack + damage
+  dice?: { s: number; v: number; drop?: boolean }[]; // each die rolled, for the table animation
 }
 
 export interface LootItem { id: string; name: string; q: number; rarity: string; desc: string; value?: string; cat: string; to?: string; at: number; ref?: string /* Loot Box item id */ }
@@ -201,7 +202,7 @@ export interface Campaign {
   partyLoot: LootItem[];
   customMonsters: Monster[];
   // fx: attack animations on the table screen; fxSound/fxVolume: their sound effects
-  settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number; fx?: boolean; fxSound?: boolean; fxVolume?: number };
+  settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number; fx?: boolean; fxSound?: boolean; fxVolume?: number; diceFx?: boolean };
   monsterNotes: Record<string, string>; // by monster id, shared by every copy
   sceneFolders: SceneFolder[];
   docs: Doc[];
