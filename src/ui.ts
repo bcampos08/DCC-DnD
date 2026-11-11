@@ -5,7 +5,7 @@ import type { FxEvent } from './lib/fx/core';
 
 export type Tool =
   | 'select' | 'ruler' | 'ping'
-  | 'fog-reveal-rect' | 'fog-hide-rect' | 'fog-reveal-brush' | 'fog-hide-brush'
+  | 'fog-reveal-rect' | 'fog-hide-rect' | 'fog-reveal-brush' | 'fog-hide-brush' | 'wall'
   | 'pen' | 'line' | 'rect' | 'circle' | 'text' | 'erase'
   | `tpl-${TemplateShape}`
   | 'grid-align';
@@ -25,6 +25,7 @@ interface UI {
   color: string;
   strokeWidth: number;
   fillShapes: boolean;
+  wallDoor: boolean; // wall tool draws doors
   dmOnlyDraw: boolean;
   brush: number; // fog brush radius in squares
   tplColor: string;
@@ -63,7 +64,7 @@ export function setTrayRolls(n: number) {
 export const useUI = create<UI>()((set, get) => ({
   tool: 'select', selected: [], selectedTemplate: null, tab: 'combat', monsterId: null,
   rollHidden: true, adv: 'normal', camera: {}, viewport: { w: 1, h: 1 },
-  color: '#e11d48', strokeWidth: 4, fillShapes: false, dmOnlyDraw: false, brush: 1.5, tplColor: '#f97316',
+  color: '#e11d48', strokeWidth: 4, fillShapes: false, wallDoor: false, dmOnlyDraw: false, brush: 1.5, tplColor: '#f97316',
   cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(), targeting: null, fx: [], selectedDrawing: null, pendingEffect: null, openDoc: null,
   set: p => set(typeof p === 'function' ? p : () => p),
   toast: (text, action) => {

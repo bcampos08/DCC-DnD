@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Transformer } from 'react-konva';
 import { Stage, Layer, Image as KImage, Rect, Shape, Line, Circle, Group, Text, Arrow } from 'react-konva';
 import type Konva from 'konva';
-import type { AreaTemplate, Camera, DrawTf, Drawing, FogOp, Scene, Token } from '../types';
+import type { AreaTemplate, Camera, DrawTf, Drawing, FogOp, Scene, Token, Wall } from '../types';
+import { paintBright, paintFogOp, paintVision, type Vision } from '../lib/vision';
 import { useImage } from '../lib/useImage';
 import { COND } from '../lib/rules';
 import { cubeRect, gridFeet, snapCentre, snapCorner, templateCells, CONE_HALF } from '../lib/geometry';
@@ -50,7 +51,11 @@ interface Props {
   onPing?: (x: number, y: number) => void;
   onTokenDblClick?: (id: string) => void;
   onAskText?: (x: number, y: number) => void;
-  vision?: { x: number; y: number; r: number }[] | null; // dark scenes: current sight circles
+  vision?: Vision | null; // dark scenes: what players can see right now
+  onWall?: (pts: number[], door: boolean) => void; // DM drew a wall or door
+  onRemoveWall?: (id: string) => void;
+  onToggleDoor?: (id: string) => void;
+  wallDoor?: boolean; // wall tool draws doors
   playersCanSee?: (x: number, y: number) => boolean; // used to keep enemy move arrows off the table
   // Table: running effects. DM: waiting for a target click.
   fx?: FxEvent[];
@@ -68,7 +73,8 @@ type Draft =
   | { k: 'pen'; pts: number[] }
   | { k: 'shape'; t: 'line' | 'rect' | 'circle'; x0: number; y0: number; x1: number; y1: number }
   | { k: 'tpl'; t: AreaTemplate }
-  | { k: 'align'; x0: number; y0: number; x1: number; y1: number };
+  | { k: 'align'; x0: number; y0: number; x1: number; y1: number }
+  | { k: 'wall'; pts: number[]; hx: number; hy: number; door: boolean };
 
 export default function MapCanvas(p: Props) {
   const { scene, mode, camera } = p;
@@ -99,6 +105,21 @@ export default function MapCanvas(p: Props) {
   // Where a shape-tool press started: on a token (and which), and the screen point, to tell clicks from drags.
   const press = useRef<{ tokenId?: string; sx: number; sy: number } | null>(null);
 
+  // Wall drafts: Enter (or right-click, or clicking the last point again) finishes, Escape cancels.
+  const finishWall = (d: Extract<Draft, { k: 'wall' }>) => { setDraft(null); if (d.pts.length >= 4) p.onWall?.(d.pts, d.door); };
+  const draftRef = useRef(draft); draftRef.current = draft;
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      const d = draftRef.current;
+      if (d?.k !== 'wall' || (e.target as HTMLElement).closest('input,textarea')) return;
+      if (e.key === 'Enter') { e.preventDefault(); finishWall(d); }
+      if (e.key === 'Escape') { e.stopPropagation(); setDraft(null); }
+    };
+    window.addEventListener('keydown', k, true);
+    return () => window.removeEventListener('keydown', k, true);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (tool !== 'wall' && draftRef.current?.k === 'wall') setDraft(null); }, [tool]);
+
   useEffect(() => {
     const d = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target as HTMLElement).closest('input,textarea')) space.current = e.type === 'keydown'; };
     window.addEventListener('keydown', d); window.addEventListener('keyup', d);
@@ -108,6 +129,13 @@ export default function MapCanvas(p: Props) {
   const toMap = () => {
     const pos = stageRef.current!.getPointerPosition()!;
     return { x: (pos.x - camera.x) / camera.scale, y: (pos.y - camera.y) / camera.scale };
+  };
+
+  // Wall points snap to the ends of other walls, then to grid corners (hold Alt to place freely).
+  const wallSnap = (x: number, y: number, free: boolean) => {
+    const tol = 10 / camera.scale;
+    for (const w of scene.walls ?? []) for (let i = 0; i < w.pts.length; i += 2) if (Math.hypot(w.pts[i] - x, w.pts[i + 1] - y) < tol) return { x: w.pts[i], y: w.pts[i + 1] };
+    return !free && g.snap ? snapCorner(x, y, g) : { x, y };
   };
 
   const onWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -124,6 +152,7 @@ export default function MapCanvas(p: Props) {
     const shift = 'shiftKey' in e.evt && e.evt.shiftKey;
     const onEmpty = e.target === e.target.getStage() || e.target.name() === 'bg' || e.target.name() === 'mapimg';
     const pos = stageRef.current!.getPointerPosition()!;
+    if (dm && tool === 'wall' && btn === 2 && draft?.k === 'wall') { finishWall(draft); return; }
     if (!dm || btn === 1 || btn === 2 || space.current) {
       setDraft({ k: 'pan', sx: pos.x, sy: pos.y, cx: camera.x, cy: camera.y, moved: false });
       return;
@@ -141,6 +170,19 @@ export default function MapCanvas(p: Props) {
       if (!onEmpty) return;
       if (shift) setDraft({ k: 'box', x0: m.x, y0: m.y, x1: m.x, y1: m.y });
       else setDraft({ k: 'pan', sx: pos.x, sy: pos.y, cx: camera.x, cy: camera.y, moved: false });
+      return;
+    }
+    if (tool === 'wall') {
+      const alt = 'altKey' in e.evt && e.evt.altKey;
+      const c = wallSnap(m.x, m.y, alt);
+      if (draft?.k === 'wall') {
+        const n = draft.pts.length;
+        const near = (x: number, y: number) => Math.hypot(c.x - x, c.y - y) * camera.scale < 8;
+        if (near(draft.pts[n - 2], draft.pts[n - 1])) { finishWall(draft); return; } // clicked the last point again
+        const pts = [...draft.pts, c.x, c.y];
+        if (draft.door || (n >= 6 && near(draft.pts[0], draft.pts[1]))) { finishWall({ ...draft, pts }); return; } // doors are one segment; closing a room ends it
+        setDraft({ ...draft, pts, hx: c.x, hy: c.y });
+      } else setDraft({ k: 'wall', pts: [c.x, c.y], hx: c.x, hy: c.y, door: !!p.wallDoor });
       return;
     }
     if (tool === 'ruler') {
@@ -177,6 +219,7 @@ export default function MapCanvas(p: Props) {
     if (!pos) return;
     const m = toMap();
     switch (draft.k) {
+      case 'wall': { const c = wallSnap(m.x, m.y, false); setDraft({ ...draft, hx: c.x, hy: c.y }); return; }
       case 'pan': {
         const dx = pos.x - draft.sx, dy = pos.y - draft.sy;
         if (Math.abs(dx) + Math.abs(dy) > 3) draft.moved = true;
@@ -214,6 +257,7 @@ export default function MapCanvas(p: Props) {
 
   const onUp = () => {
     const d = draft;
+    if (d?.k === 'wall') return; // walls are drawn click by click
     setDraft(null);
     if (!d) return;
     const pos = stageRef.current?.getPointerPosition();
@@ -387,15 +431,29 @@ export default function MapCanvas(p: Props) {
       {scene.fog.enabled && p.vision && (
         // Explored but not currently seen: dimmed. Clear only inside current sight or areas the DM revealed by hand.
         <Layer ref={dimLayer} listening={false}>
-          <FogShape ops={scene.fog.ops.filter(o => !o.auto)} cut={p.vision} lights={lightsRef} />
+          <FogShape ops={scene.fog.ops.filter(o => !o.auto)} cut={p.vision} dimLight lights={lightsRef} />
         </Layer>
       )}
       {scene.fog.enabled && (
         <Layer ref={fogLayer} listening={false}>
-          <FogShape lights={lightsRef} ops={draft?.k === 'brush' ? [...scene.fog.ops, { t: 'brush', mode: draft.mode, r: (p.drawStyle?.brush ?? 1.5) * g.size, pts: draft.pts }] : scene.fog.ops} />
+          <FogShape lights={lightsRef} cut={p.vision} ops={draft?.k === 'brush' ? [...scene.fog.ops, { t: 'brush', mode: draft.mode, r: (p.drawStyle?.brush ?? 1.5) * g.size, pts: draft.pts }] : scene.fog.ops} />
         </Layer>
       )}
 
+      {dm && (!!scene.walls?.length || draft?.k === 'wall') && (
+        <Layer>
+          {(scene.walls ?? []).map(w => (
+            <WallNode key={w.id} w={w} scale={camera.scale} strong={tool === 'wall' || tool === 'erase'}
+              erase={tool === 'erase'} onRemove={() => p.onRemoveWall?.(w.id)} onToggle={() => p.onToggleDoor?.(w.id)} />
+          ))}
+          {draft?.k === 'wall' && (
+            <Group listening={false}>
+              <Line points={[...draft.pts, draft.hx, draft.hy]} stroke={draft.door ? '#f59e0b' : '#22d3ee'} strokeWidth={4 / camera.scale} dash={[10 / camera.scale, 6 / camera.scale]} lineCap="round" lineJoin="round" />
+              {Array.from({ length: draft.pts.length / 2 }, (_, i) => <Circle key={i} x={draft.pts[i * 2]} y={draft.pts[i * 2 + 1]} radius={4 / camera.scale} fill="#22d3ee" />)}
+            </Group>
+          )}
+        </Layer>
+      )}
       <Layer listening={false}>
         {draft?.k === 'fogrect' && <Rect x={Math.min(draft.x0, draft.x1)} y={Math.min(draft.y0, draft.y1)} width={Math.abs(draft.x1 - draft.x0)} height={Math.abs(draft.y1 - draft.y0)} stroke={draft.mode === 'reveal' ? '#fde68a' : '#94a3b8'} dash={[10, 6]} strokeWidth={3 / camera.scale} fill={draft.mode === 'reveal' ? 'rgba(253,230,138,.15)' : 'rgba(0,0,0,.35)'} />}
         {draft?.k === 'brush' && dm && null}
@@ -429,7 +487,17 @@ function TokenNode(props: {
   onDragStart: () => void; onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void; onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void; onDbl: () => void;
 }) {
   const { t, g, c, dm } = props;
-  const img = useImage(t.image || c.portrait);
+  const img = useImage(t.silhouette ? undefined : t.image || c.portrait);
+  if (t.silhouette) {
+    // Seen only in dim light: a dark shape, nothing more.
+    const rr = (Math.max(t.size, 0.5) * g) / 2 * 0.9;
+    return (
+      <Group name="token" id={t.id} x={props.x} y={props.y} listening={false}>
+        <Circle radius={rr + 2} fill="rgba(0,0,0,.5)" offsetY={-3} />
+        <Circle radius={rr} fill="#050505" stroke="#2a2a2a" strokeWidth={2} />
+      </Group>
+    );
+  }
   const r = (Math.max(t.size, 0.5) * g) / 2 * 0.9;
   const isPc = t.kind === 'pc';
   const ds = c.deathSaves ?? { success: 0, fail: 0 };
@@ -517,7 +585,9 @@ function TokenNode(props: {
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
 
 // ---------- fog ----------
-function FogShape({ ops, cut, lights }: { ops: FogOp[]; cut?: { x: number; y: number; r: number }[]; lights?: React.MutableRefObject<Light[]> }) {
+let scratch: HTMLCanvasElement | null = null;
+// dimLight: areas seen only in dim light keep some shade, so players can tell where bright light ends.
+function FogShape({ ops, cut, lights, dimLight }: { ops: FogOp[]; cut?: Vision | null; lights?: React.MutableRefObject<Light[]>; dimLight?: boolean }) {
   return (
     <Shape
       sceneFunc={ctx => {
@@ -529,18 +599,19 @@ function FogShape({ ops, cut, lights }: { ops: FogOp[]; cut?: { x: number; y: nu
         for (const op of ops) {
           c.globalCompositeOperation = op.mode === 'reveal' ? 'destination-out' : 'source-over';
           c.fillStyle = '#000'; c.strokeStyle = '#000';
-          if (op.t === 'all') c.fillRect(-20000, -20000, 40000, 40000);
-          else if (op.t === 'rect') c.fillRect(op.x, op.y, op.w, op.h);
-          else if (op.t === 'brush') {
-            c.lineWidth = op.r * 2; c.lineCap = 'round'; c.lineJoin = 'round';
-            c.beginPath(); c.moveTo(op.pts[0], op.pts[1]);
-            for (let i = 2; i < op.pts.length; i += 2) c.lineTo(op.pts[i], op.pts[i + 1]);
-            c.stroke();
-          }
+          paintFogOp(c, op);
         }
-        if (cut?.length) {
+        if (cut) {
           c.globalCompositeOperation = 'destination-out';
-          for (const v of cut) { c.beginPath(); c.arc(v.x, v.y, v.r, 0, Math.PI * 2); c.fill(); }
+          if (dimLight && !cut.lit) {
+            // Paint sight once on a scratch canvas so overlapping areas don't clear twice, then half-clear it.
+            const tmp = (scratch ??= document.createElement('canvas'));
+            tmp.width = c.canvas.width; tmp.height = c.canvas.height;
+            const tc = tmp.getContext('2d')!;
+            tc.setTransform(c.getTransform()); tc.fillStyle = '#000'; paintVision(tc, cut);
+            c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 0.5; c.drawImage(tmp, 0, 0); c.restore();
+            c.fillStyle = '#000'; paintBright(c, cut);
+          } else { c.fillStyle = '#000'; paintVision(c, cut); }
         }
         // Light given off by spells in flight: soft-edged holes that close again when they pass.
         if (lights?.current.length) {
@@ -714,6 +785,27 @@ function PingNode({ p, scale }: { p: Ping; scale: number }) {
         return <Circle key={o} radius={(10 + k * 90) / scale} stroke="#f472b6" strokeWidth={5 / scale} opacity={(1 - k) * (1 - age)} />;
       })}
       <Circle radius={8 / scale} fill="#f472b6" opacity={1 - age} />
+    </Group>
+  );
+}
+
+// ---------- walls (DM only) ----------
+function WallNode({ w, scale, strong, erase, onRemove, onToggle }: { w: Wall; scale: number; strong: boolean; erase: boolean; onRemove: () => void; onToggle: () => void }) {
+  const color = w.door ? (w.open ? '#4ade80' : '#f59e0b') : '#22d3ee';
+  const n = w.pts.length;
+  const mx = (w.pts[0] + w.pts[n - 2]) / 2, my = (w.pts[1] + w.pts[n - 1]) / 2;
+  const hs = 9 / scale;
+  return (
+    <Group>
+      <Line points={w.pts} stroke={color} opacity={strong ? 0.95 : 0.55} strokeWidth={(strong ? 4 : 2.5) / scale} lineCap="round" lineJoin="round"
+        dash={w.door && w.open ? [8 / scale, 6 / scale] : undefined} hitStrokeWidth={14 / scale} listening={erase}
+        onMouseDown={e => { if (erase) { e.cancelBubble = true; onRemove(); } }} />
+      {w.door && !erase && (
+        <Group x={mx} y={my} onMouseDown={e => { e.cancelBubble = true; onToggle(); }} onTap={onToggle}>
+          <Rect x={-hs} y={-hs} width={hs * 2} height={hs * 2} cornerRadius={3 / scale} fill={w.open ? '#14532d' : '#78350f'} stroke={color} strokeWidth={2 / scale} />
+          <Text text={w.open ? '⇆' : '▮'} fontSize={12 / scale} fill="#fff" width={hs * 2} height={hs * 2} x={-hs} y={-hs} align="center" verticalAlign="middle" />
+        </Group>
+      )}
     </Group>
   );
 }

@@ -93,7 +93,9 @@ export interface Token {
   conditions: string[];
   concentrating?: boolean;
   note?: string; // DM-only note for this one token
-  light?: number; // feet of light this token carries (torch 40, lantern 60)
+  light?: number; // bright light this token carries, in feet (torch 20)
+  lightDim?: number; // dim light reaches this far, in feet (torch 40). Missing on older saves: see lightOf()
+  silhouette?: boolean; // table only: seen in dim light, drawn as a plain black shape
   fxPick?: FxPick; // last effect chosen in the token card's Play an effect
 }
 
@@ -101,7 +103,12 @@ export interface Token {
 export type FogOp =
   | { t: 'rect'; mode: 'reveal' | 'hide'; x: number; y: number; w: number; h: number; auto?: boolean }
   | { t: 'brush'; mode: 'reveal' | 'hide'; r: number; pts: number[]; auto?: boolean }
-  | { t: 'all'; mode: 'reveal' | 'hide'; auto?: boolean };
+  | { t: 'all'; mode: 'reveal' | 'hide'; auto?: boolean }
+  // polys: polygons, each a list of rings [x0, y0, x1, y1, ...]; later rings are holes
+  | { t: 'poly'; mode: 'reveal' | 'hide'; polys: number[][][]; auto?: boolean };
+
+// Walls block player sight (DM only; they don't change how the map looks). Doors can be opened.
+export interface Wall { id: string; pts: number[]; door?: boolean; open?: boolean }
 
 // tf: moved/rotated/resized with the select tool (applied on top of the original shape)
 export interface DrawTf { x: number; y: number; rot: number; sx: number; sy: number }
@@ -148,6 +155,7 @@ export interface Scene {
   // autoReveal: player tokens clear fog around them as they move. light 'dark' = only darkvision and carried light count.
   fog: { enabled: boolean; ops: FogOp[]; autoReveal?: boolean; light?: 'lit' | 'dark'; sightFeet?: number };
   effects?: LastingFx[]; // spell effects that stay on the map for a while
+  walls?: Wall[];
   tableCamera?: Camera;
 }
 

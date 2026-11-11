@@ -21,7 +21,8 @@ import { useUI, type Tab } from '../ui';
 import { channel, send, tableState, type Measure, type Ping } from '../lib/sync';
 import { uid } from '../lib/id';
 import type { Camera, Scene, SceneFolder, Token } from '../types';
-import { playersCanSee, revealOp, tracksVision, visionCircles } from '../lib/vision';
+import { computeVision, pathSamples, playersCanSee, tracksVision } from '../lib/vision';
+import { exploreNow } from '../lib/explore';
 import { expireLasting, playTemplate } from '../lib/fx/play';
 import type { Element } from '../lib/fx/core';
 import EffectsBar from '../components/EffectsBar';
@@ -107,7 +108,7 @@ export default function DMView() {
         if (enc.active && ts.scene) {
           const seen = new Set(enc.seenTokens ?? []);
           const inFight = new Set(enc.entries.flatMap(e => e.tokenIds));
-          const fresh = ts.scene.tokens.filter(t => t.kind !== 'pc' && inFight.has(t.id) && !seen.has(t.id)).map(t => t.id);
+          const fresh = ts.scene.tokens.filter(t => t.kind !== 'pc' && !t.silhouette && inFight.has(t.id) && !seen.has(t.id)).map(t => t.id);
           if (fresh.length) useCampaign.getState().set(d => { d.encounter.seenTokens = [...seen, ...fresh]; });
         }
       });
@@ -158,7 +159,7 @@ export default function DMView() {
 
   const activeEntry = st.encounter.active ? st.encounter.entries[st.encounter.turn] : undefined;
   const activeIds = new Set(activeEntry?.tokenIds ?? []);
-  const vision = tracksVision(scene) ? visionCircles(scene, st.characters) : null;
+  const vision = tracksVision(scene) ? computeVision(scene, st.characters) : null;
   const drawStyle = { color: ui.color, width: ui.strokeWidth, fill: ui.fillShapes, dmOnly: ui.dmOnlyDraw, brush: ui.brush, tplColor: ui.tplColor };
   const upd = (fn: (s: Scene) => void) => st.updateScene(scene.id, fn);
 
@@ -216,18 +217,21 @@ export default function DMView() {
             diagonal={st.settings.diagonal} drawStyle={drawStyle}
             onSelect={(ids, add) => ui.set(s => ({ selected: add ? [...new Set([...s.selected, ...ids])] : ids, selectedTemplate: null }))}
             onSelectTemplate={id => ui.set({ selectedTemplate: id, selectedDrawing: null })}
-            onMoveTokens={moves => upd(s => {
-              moves.forEach(m => {
-                const t = s.tokens.find(t => t.id === m.id);
-                if (!t) return;
-                const from = { x: t.x, y: t.y };
-                t.x = m.x; t.y = m.y;
-                // Player tokens clear fog along their path, as far as they can see.
-                const op = revealOp(s as Scene, t as Token, st.characters.find(c => c.id === t.charId), from, m);
-                if (op) s.fog.ops.push(op);
-              });
-            })}
+            onMoveTokens={moves => {
+              // Player tokens (and anyone carrying light) clear fog along their path, as far as players can see.
+              const paths = new Map<string, { x: number; y: number }[]>();
+              for (const m of moves) {
+                const t = scene.tokens.find(t => t.id === m.id);
+                if (t && !t.hidden && (t.kind === 'pc' || t.light)) paths.set(t.id, pathSamples(scene, t, m));
+              }
+              upd(s => { moves.forEach(m => { const t = s.tokens.find(t => t.id === m.id); if (t) { t.x = m.x; t.y = m.y; } }); });
+              if (paths.size) exploreNow(scene.id, paths);
+            }}
             onFog={op => upd(s => { s.fog.ops.push(op); })}
+            wallDoor={ui.wallDoor}
+            onWall={(pts, door) => upd(s => { (s.walls ??= []).push({ id: Math.random().toString(36).slice(2, 10), pts, ...(door ? { door: true } : {}) }); })}
+            onRemoveWall={id => upd(s => { s.walls = (s.walls ?? []).filter(w => w.id !== id); })}
+            onToggleDoor={id => { upd(s => { const w = s.walls?.find(w => w.id === id); if (w) w.open = !w.open; }); exploreNow(scene.id); }}
             onDraw={d => upd(s => { s.drawings.push(d); })}
             onRemoveDrawing={id => upd(s => { s.drawings = s.drawings.filter(d => d.id !== id); })}
             onTemplate={t => {

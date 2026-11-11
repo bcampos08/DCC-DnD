@@ -3,6 +3,7 @@ import { Layer, Shape } from 'react-konva';
 import type Konva from 'konva';
 import type { FogOp, Scene } from '../types';
 import { drawFx, drawLasting, type Light } from '../lib/fx/draw';
+import { paintFogOp, paintVision, type Vision } from '../lib/vision';
 import { timeline, type FxEvent } from '../lib/fx/core';
 
 // Table screen only: draws running effects every frame. In dark scenes effects only show where
@@ -10,7 +11,7 @@ import { timeline, type FxEvent } from '../lib/fx/core';
 export default function FxLayer({ fx, scene, vision, lightsRef, fogLayers, onDone }: {
   fx: FxEvent[]; // one-off animations (lasting effects come from scene.effects)
   scene: Scene;
-  vision: { x: number; y: number; r: number }[] | null;
+  vision: Vision | null;
   lightsRef: React.MutableRefObject<Light[]>;
   fogLayers: React.RefObject<Konva.Layer | null>[];
   onDone: (id: string) => void;
@@ -65,7 +66,8 @@ export default function FxLayer({ fx, scene, vision, lightsRef, fogLayers, onDon
           mc.fillStyle = '#fff'; mc.strokeStyle = '#fff';
           for (const op of scene.fog.ops) if (!op.auto) paintOp(mc, op);
           mc.globalCompositeOperation = 'source-over';
-          for (const s of [...v, ...lights]) { mc.beginPath(); mc.arc(s.x, s.y, s.r, 0, Math.PI * 2); mc.fill(); }
+          paintVision(mc, v);
+          for (const s of lights) { mc.beginPath(); mc.arc(s.x, s.y, s.r, 0, Math.PI * 2); mc.fill(); }
           c.save();
           c.globalCompositeOperation = 'destination-in';
           c.drawImage(m, 0, 0, W, H);
@@ -78,12 +80,5 @@ export default function FxLayer({ fx, scene, vision, lightsRef, fogLayers, onDon
 
 function paintOp(c: CanvasRenderingContext2D, op: FogOp) {
   c.globalCompositeOperation = op.mode === 'reveal' ? 'source-over' : 'destination-out';
-  if (op.t === 'all') c.fillRect(-1e5, -1e5, 2e5, 2e5);
-  else if (op.t === 'rect') c.fillRect(op.x, op.y, op.w, op.h);
-  else {
-    c.lineWidth = op.r * 2; c.lineCap = 'round'; c.lineJoin = 'round';
-    c.beginPath(); c.moveTo(op.pts[0], op.pts[1]);
-    for (let i = 2; i < op.pts.length; i += 2) c.lineTo(op.pts[i], op.pts[i + 1]);
-    c.stroke();
-  }
+  paintFogOp(c, op);
 }

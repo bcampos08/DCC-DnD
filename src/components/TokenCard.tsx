@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useCampaign, creatureOf } from '../store';
 import { useUI } from '../ui';
 import HpControl, { HpBar } from './HpControl';
@@ -8,7 +8,8 @@ import DeathSaves from './DeathSaves';
 import FxPicker from './FxPicker';
 import TokenAttacks from './TokenAttacks';
 import { findMonster } from '../lib/monsters';
-import { LIGHTS } from '../lib/vision';
+import { LIGHTS, lightOf } from '../lib/vision';
+import { exploreNow } from '../lib/explore';
 import { saveTokenImage } from '../lib/assets';
 import { TOKEN_COLORS } from '../lib/rules';
 import type { Token } from '../types';
@@ -86,13 +87,7 @@ export default function TokenCard() {
         <summary>Conditions{c.conditions.length ? ` (${c.conditions.length})` : ''}</summary>
         <Conditions value={c.conditions} onToggle={toggleCond} />
       </details>
-      {t.kind === 'pc' && (
-        <label className="row gap sm-label" title="Light this character carries. With fog on, it clears fog around them as they move.">Carrying light
-          <select value={t.light ?? 0} onChange={e => upd({ light: +e.target.value || undefined })}>
-            {LIGHTS.map(l => <option key={l.feet} value={l.feet}>{l.label}</option>)}
-          </select>
-        </label>
-      )}
+      <LightPicker key={t.id} t={t} onChange={(bright, dim) => { upd({ light: bright || undefined, lightDim: dim || undefined }); exploreNow(sceneId); }} />
       <div className="row gap wrap">
         <select value={t.size} onChange={e => upd({ size: +e.target.value })} aria-label="Size">{SIZES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
         <div className="swatches">{TOKEN_COLORS.map(col => <button key={col} className={'sw' + (t.color === col ? ' on' : '')} style={{ background: col }} onClick={() => upd({ color: col })} aria-label={`Colour ${col}`} />)}</div>
@@ -112,6 +107,35 @@ export default function TokenCard() {
         else if (t.monsterId) st.updateScene(sceneId, s => { s.tokens.forEach(x => { if (x.monsterId === t.monsterId) x.image = image; }); });
         else upd({ image });
       } e.target.value = ''; }} />
+    </div>
+  );
+}
+
+// Light a token carries: a preset (candle, torch...) or custom bright and dim distances.
+function LightPicker({ t, onChange }: { t: Token; onChange: (bright: number, dim: number) => void }) {
+  const l = lightOf(t);
+  const preset = LIGHTS.find(p => p.bright === l.bright && p.dim === l.dim);
+  const [custom, setCustom] = useState(!preset);
+  const value = custom ? 'custom' : preset!.id;
+  return (
+    <div className="light-pick" title="Light this creature carries. In dark scenes, fog lifts out to the dim distance; enemies in dim light show to players only as dark shapes.">
+      <label className="row gap sm-label">Carrying light
+        <select value={value} onChange={e => {
+          if (e.target.value === 'custom') { setCustom(true); return; }
+          setCustom(false);
+          const p = LIGHTS.find(p => p.id === e.target.value)!;
+          onChange(p.bright, p.dim);
+        }}>
+          {LIGHTS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      {custom && (
+        <div className="row gap sm-label">
+          <label className="row gap">Bright <input type="number" min={0} step={5} value={l.bright} onChange={e => onChange(Math.max(0, +e.target.value || 0), Math.max(l.dim, +e.target.value || 0))} style={{ width: 58 }} /> ft</label>
+          <label className="row gap">Dim to <input type="number" min={0} step={5} value={l.dim} onChange={e => onChange(Math.min(l.bright, +e.target.value || 0), Math.max(0, +e.target.value || 0))} style={{ width: 58 }} /> ft</label>
+        </div>
+      )}
     </div>
   );
 }

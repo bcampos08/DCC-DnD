@@ -65,7 +65,12 @@ export default function ScenesPanel() {
           )}
         </div>
       )}
-      <p className="hint">Use the fog tools on the left. You see fog as a shaded overlay; players see solid black. Revealing by movement clears a circle; it doesn't stop at walls, so hide anything behind a wall again with the Hide tools.</p>
+      <div className="row gap wrap">
+        <span className="sm-label">Walls: <b>{scene.walls?.filter(w => !w.door).length ?? 0}</b> · Doors: <b>{scene.walls?.filter(w => w.door).length ?? 0}</b></span>
+        <button className="btn sm" onClick={() => useUI.getState().set({ tool: 'wall' })}>🧱 Draw walls</button>
+        <button className="btn sm danger" disabled={!scene.walls?.length} onClick={() => { if (confirm('Remove every wall and door on this scene?')) st.updateScene(activeId, s => { s.walls = []; }); }}>Clear walls</button>
+      </div>
+      <p className="hint">Use the fog tools on the left. You see fog as a shaded overlay; players see solid black. Walls (🧱, or W) block what player tokens can see; they only show on your screen. Click a door's square to open or close it. Erase (E) removes a wall you click. In dark scenes fog lifts out to each light's dim distance, and enemies in dim light show to players only as dark shapes.</p>
 
       <h3 className="h">Table settings</h3>
       <label className="check"><input type="checkbox" checked={settings.showMonsterNames} onChange={e => st.set(d => { d.settings.showMonsterNames = e.target.checked; })} /> Show monster names on the table</label>

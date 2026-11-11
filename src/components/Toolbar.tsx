@@ -12,6 +12,7 @@ const GROUPS: { title: string; tools: { id: Tool; icon: string; label: string; k
     { id: 'fog-reveal-brush', icon: '🖌', label: 'Reveal with brush' },
     { id: 'fog-hide-rect', icon: '■', label: 'Hide area (drag a box)', key: 'H' },
     { id: 'fog-hide-brush', icon: '🖍', label: 'Hide with brush' },
+    { id: 'wall', icon: '🧱', label: 'Walls and doors: click points, then Enter, right-click or click the last point to finish. Walls block player sight.', key: 'W' },
   ] },
   { title: 'Draw', tools: [
     { id: 'pen', icon: '✏', label: 'Freehand', key: 'D' },
@@ -59,6 +60,15 @@ export default function Toolbar() {
           {isDraw && ui.tool !== 'text' && <input type="range" min={1} max={24} value={ui.strokeWidth} onChange={e => ui.set({ strokeWidth: +e.target.value })} title="Line width" aria-label="Line width" />}
           {(ui.tool === 'rect' || ui.tool === 'circle') && <label className="check" title="Fill shape"><input type="checkbox" checked={ui.fillShapes} onChange={e => ui.set({ fillShapes: e.target.checked })} />Fill</label>}
           {isDraw && <label className="check" title="Only you see it"><input type="checkbox" checked={ui.dmOnlyDraw} onChange={e => ui.set({ dmOnlyDraw: e.target.checked })} />DM only</label>}
+        </div>
+      )}
+      {ui.tool === 'wall' && (
+        <div className="tool-opts wall-opts">
+          <div className="seg">
+            <button className={!ui.wallDoor ? 'on' : ''} onClick={() => ui.set({ wallDoor: false })} title="Draw walls">Wall</button>
+            <button className={ui.wallDoor ? 'on' : ''} onClick={() => ui.set({ wallDoor: true })} title="Draw a door: two clicks. Click its square to open or close it.">Door</button>
+          </div>
+          <small className="muted">Snaps to grid corners. Alt: place freely. Esc: cancel.</small>
         </div>
       )}
       {isBrush && (

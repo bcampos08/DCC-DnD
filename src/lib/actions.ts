@@ -7,7 +7,7 @@ import { SIZE_SQUARES, TOKEN_COLORS } from './rules';
 import { evaluate, modOf, d20Expr } from './dice';
 import { findMonster } from './monsters';
 import { roll } from './roll';
-import { revealOp } from './vision';
+import { exploreNow } from './explore';
 import { isDefeatedIn } from './defeat';
 import { playFx } from './fx/play';
 
@@ -72,8 +72,8 @@ export function addCharacterToken(c: Character) {
   if (existing) { useUI.getState().set({ selected: [existing.id] }); return; }
   const [p] = spots(1, 1, sc.tokens);
   const t: Token = { id: uid(), name: c.name, x: p.x, y: p.y, size: 1, color: c.color, kind: 'pc', charId: c.id, hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: c.ac, conditions: [] };
-  const op = revealOp(sc, t, c, p, p);
-  st.updateScene(sc.id, s => { s.tokens.push(t); if (op) s.fog.ops.push(op); });
+  st.updateScene(sc.id, s => { s.tokens.push(t); });
+  exploreNow(sc.id);
   // Placed mid-fight: link the token to the character's initiative entry, or add one.
   if (st.encounter.active) st.setEntries(e => {
     const ent = e.find(x => x.charId === c.id);
