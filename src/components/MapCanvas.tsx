@@ -131,11 +131,14 @@ export default function MapCanvas(p: Props) {
     return { x: (pos.x - camera.x) / camera.scale, y: (pos.y - camera.y) / camera.scale };
   };
 
-  // Wall points snap to the ends of other walls, then to grid corners (hold Alt to place freely).
-  const wallSnap = (x: number, y: number, free: boolean) => {
-    const tol = 10 / camera.scale;
+  // Wall points go exactly where you click. They join the end of another wall when you click right on it
+  // (hold Alt to stop that), and hold Shift to snap to a grid corner.
+  const wallSnap = (x: number, y: number, free: boolean, grid = false) => {
+    if (grid) return snapCorner(x, y, g);
+    if (free) return { x, y };
+    const tol = 7 / camera.scale;
     for (const w of scene.walls ?? []) for (let i = 0; i < w.pts.length; i += 2) if (Math.hypot(w.pts[i] - x, w.pts[i + 1] - y) < tol) return { x: w.pts[i], y: w.pts[i + 1] };
-    return !free && g.snap ? snapCorner(x, y, g) : { x, y };
+    return { x, y };
   };
 
   const onWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -174,7 +177,7 @@ export default function MapCanvas(p: Props) {
     }
     if (tool === 'wall') {
       const alt = 'altKey' in e.evt && e.evt.altKey;
-      const c = wallSnap(m.x, m.y, alt);
+      const c = wallSnap(m.x, m.y, alt, shift);
       if (draft?.k === 'wall') {
         const n = draft.pts.length;
         const near = (x: number, y: number) => Math.hypot(c.x - x, c.y - y) * camera.scale < 8;

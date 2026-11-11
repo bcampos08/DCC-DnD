@@ -68,7 +68,7 @@ export default function Toolbar() {
             <button className={!ui.wallDoor ? 'on' : ''} onClick={() => ui.set({ wallDoor: false })} title="Draw walls">Wall</button>
             <button className={ui.wallDoor ? 'on' : ''} onClick={() => ui.set({ wallDoor: true })} title="Draw a door: two clicks. Click its square to open or close it.">Door</button>
           </div>
-          <small className="muted">Snaps to grid corners. Alt: place freely. Esc: cancel.</small>
+          <small className="muted">Points go where you click. Shift: snap to grid. Esc: cancel.</small>
         </div>
       )}
       {isBrush && (
