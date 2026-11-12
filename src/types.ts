@@ -210,13 +210,16 @@ export interface Campaign {
   partyLoot: LootItem[];
   customMonsters: Monster[];
   // fx: attack animations on the table screen; fxSound/fxVolume: their sound effects
-  settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number; fx?: boolean; fxSound?: boolean; fxVolume?: number; diceFx?: boolean; lootSound?: boolean };
+  settings: { diagonal: '5' | '5-10'; showMonsterNames: boolean; partyLevel: number; fx?: boolean; fxSound?: boolean; fxVolume?: number; diceFx?: boolean; lootSound?: boolean; lootSounds?: Record<string, CustomSound> };
   monsterNotes: Record<string, string>; // by monster id, shared by every copy
   sceneFolders: SceneFolder[];
   docs: Doc[];
   docFolders: SceneFolder[];
   notes: Note[];
 }
+
+// A sound file the DM uploaded (stored like maps: "asset:..."), e.g. for opening a Celestial box.
+export interface CustomSound { asset: string; name: string; mime: string }
 
 // ----- Full character sheet read from D&D Beyond -----
 export interface SheetText { name: string; desc: string; source?: string; level?: number }

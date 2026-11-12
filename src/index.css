@@ -549,3 +549,11 @@ h3, h4 { margin: 0; }
 .dice-tray .tag { font-size: .66rem; padding: 0 4px; }
 .dice-tray .tray-rolls { max-height: 34vh; }
 .dice-tray .seg button { font-size: .78rem; padding: 4px 7px; white-space: nowrap; }
+.loot-sounds { margin: 2px 0 6px; }
+.loot-sounds summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.ls-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ls-list li { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--raised); }
+.ls-tier { min-width: 6.5em; font-family: var(--display); color: var(--t, var(--fg)); }
+.ls-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ls-list .t-bronze { --t: var(--bronze); } .ls-list .t-silver { --t: var(--silver); } .ls-list .t-gold { --t: var(--gold); }
+.ls-list .t-platinum { --t: var(--platinum); } .ls-list .t-legendary { --t: var(--legendary); } .ls-list .t-celestial { --t: var(--celestial); }

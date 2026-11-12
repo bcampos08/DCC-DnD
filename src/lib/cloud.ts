@@ -59,6 +59,7 @@ function assetKeys(c: Campaign) {
   }
   for (const ch of c.characters) if (ch.image?.startsWith('asset:')) keys.add(ch.image);
   for (const d of c.docs ?? []) keys.add(d.asset);
+  for (const snd of Object.values(c.settings.lootSounds ?? {})) keys.add(snd.asset);
   return [...keys];
 }
 const objName = (uid: string, key: string) => `${uid}/${key.slice('asset:'.length)}`;

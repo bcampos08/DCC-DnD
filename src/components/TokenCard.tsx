@@ -118,7 +118,7 @@ function LightPicker({ t, onChange }: { t: Token; onChange: (bright: number, dim
   const [custom, setCustom] = useState(!preset);
   const value = custom ? 'custom' : preset!.id;
   return (
-    <div className="light-pick" title="Light this creature carries. In dark scenes, fog lifts out to the dim distance; enemies in dim light show to players only as dark shapes.">
+    <div className="light-pick" title="Light this creature carries. In dark scenes, fog lifts out to the dim distance; enemies in dim light show to players blurred until they step into bright light.">
       <label className="row gap sm-label">Carrying light
         <select value={value} onChange={e => {
           if (e.target.value === 'custom') { setCustom(true); return; }

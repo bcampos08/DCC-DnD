@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BOXES, TIERS, BOXMAP, RNAME, CATS, MTYPES, openBox, rerollAt, oddsText, monsterOddsText, bandFor, onLootMessage, MAX_LEVEL, type LootResult } from '../../loot/engine';
 import { useMonsters } from '../../lib/monsters';
 import { chestSound, searchSound } from '../../lib/fx/sound';
+import { playCustomSound } from '../../lib/customSound';
 import { useCampaign } from '../../store';
 import { useUI } from '../../ui';
 import { uid } from '../../lib/id';
@@ -60,8 +61,12 @@ export default function LootPanel() {
     // Sound plays from this computer (the VTT only; the Loot Box Forge app itself stays silent).
     const s = useCampaign.getState().settings;
     if (s.fxSound !== false && s.lootSound !== false) {
-      if (r.monster) searchSound(s.fxVolume ?? 0.7, r.items.length > 0);
-      else chestSound(s.fxVolume ?? 0.7, TIERS.findIndex(t => t.id === r.tier), !!r.coins);
+      const vol = s.fxVolume ?? 0.7;
+      const builtIn = () => (r.monster ? searchSound(vol, r.items.length > 0) : chestSound(vol, TIERS.findIndex(t => t.id === r.tier), !!r.coins));
+      // Your own sound for this box (Monster, or the box's rarity), if you uploaded one.
+      const custom = s.lootSounds?.[r.monster ? 'monster' : r.tier];
+      if (custom) playCustomSound(custom, vol).then(ok => { if (!ok) builtIn(); });
+      else builtIn();
     }
     setRes(r); setPicked(new Set(r.items.map((_, i) => i))); setCoins(true); };
   const toggle = (i: number) => setPicked(p => { const n = new Set(p); if (n.has(i)) n.delete(i); else n.add(i); return n; });

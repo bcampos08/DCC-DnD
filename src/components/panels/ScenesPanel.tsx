@@ -2,7 +2,9 @@ import { useRef, useState } from 'react';
 import { useCampaign, newScene } from '../../store';
 import { useUI } from '../../ui';
 import { BUILTIN_MAPS } from '../../lib/builtinMaps';
-import { prepareImage, saveAsset } from '../../lib/assets';
+import { deleteAsset, prepareImage, saveAsset } from '../../lib/assets';
+import { playCustomSound } from '../../lib/customSound';
+import { TIERS } from '../../loot/engine';
 import { exportBackup, importBackup } from '../../lib/backup';
 import { uid } from '../../lib/id';
 import Modal from '../Modal';
@@ -70,7 +72,7 @@ export default function ScenesPanel() {
         <button className="btn sm" onClick={() => useUI.getState().set({ tool: 'wall' })}>🧱 Draw walls</button>
         <button className="btn sm danger" disabled={!scene.walls?.length} onClick={() => { if (confirm('Remove every wall and door on this scene?')) st.updateScene(activeId, s => { s.walls = []; }); }}>Clear walls</button>
       </div>
-      <p className="hint">Use the fog tools on the left. You see fog as a shaded overlay; players see solid black. Walls (🧱, or W) block what player tokens can see; they only show on your screen. Click a door's square to open or close it. Erase (E) removes a wall you click. In dark scenes fog lifts out to each light's dim distance, and enemies in dim light show to players only as dark shapes.</p>
+      <p className="hint">Use the fog tools on the left. You see fog as a shaded overlay; players see solid black. Walls (🧱, or W) block what player tokens can see; they only show on your screen. Click a door's square to open or close it. Erase (E) removes a wall you click. In dark scenes fog lifts out to each light's dim distance, and enemies in dim light show to players blurred until they step into bright light.</p>
 
       <h3 className="h">Table settings</h3>
       <label className="check"><input type="checkbox" checked={settings.showMonsterNames} onChange={e => st.set(d => { d.settings.showMonsterNames = e.target.checked; })} /> Show monster names on the table</label>
@@ -86,6 +88,7 @@ export default function ScenesPanel() {
       <label className="check"><input type="checkbox" checked={settings.diceFx !== false} onChange={e => st.set(d => { d.settings.diceFx = e.target.checked; })} /> Dice roll animations on the table screen</label>
       <label className="check"><input type="checkbox" checked={settings.fxSound !== false} onChange={e => st.set(d => { d.settings.fxSound = e.target.checked; })} /> Sound effects</label>
       <label className="check"><input type="checkbox" checked={settings.lootSound !== false} disabled={settings.fxSound === false} onChange={e => st.set(d => { d.settings.lootSound = e.target.checked; })} /> Chest sounds when opening loot boxes</label>
+      {settings.fxSound !== false && settings.lootSound !== false && <LootSounds />}
       <label className="slider">Volume <input type="range" min={0} max={1} step={0.05} value={settings.fxVolume ?? 0.7} onChange={e => st.set(d => { d.settings.fxVolume = +e.target.value; })} /><button className="btn sm" onClick={() => testSound(settings.fxVolume ?? 0.7)}>Test</button></label>
       <p className="hint">Hidden rolls never animate. With animations on, clicking an attack asks you to click its target; Esc just rolls. Sounds play from this computer, so they come out of the TV if its audio goes there.</p>
 
@@ -149,5 +152,45 @@ function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: strin
         ))}
       </div>
     </Modal>
+  );
+}
+
+// Your own sound files for opening loot boxes, one per rarity (and one for searching a Monster).
+function LootSounds() {
+  const sounds = useCampaign(s => s.settings.lootSounds);
+  const volume = useCampaign(s => s.settings.fxVolume ?? 0.7);
+  const file = useRef<HTMLInputElement>(null);
+  const [target, setTarget] = useState('');
+  const st = useCampaign.getState();
+  const rows = [...TIERS.map(t => ({ id: t.id, label: t.name })), { id: 'monster', label: 'Monster search' }];
+  const upload = async (f: File) => {
+    if (!f.type.startsWith('audio/') && !/\.(mp3|wav|ogg|m4a|aac|flac|webm)$/i.test(f.name)) { useUI.getState().toast('That isn\'t a sound file. Try MP3, WAV, OGG or M4A.'); return; }
+    if (f.size > 15e6) { useUI.getState().toast('That file is over 15 MB. Try a shorter clip.'); return; }
+    const old = sounds?.[target];
+    const asset = await saveAsset(f);
+    st.set(d => { (d.settings.lootSounds ??= {})[target] = { asset, name: f.name, mime: f.type || 'audio/mpeg' }; });
+    if (old) deleteAsset(old.asset);
+    playCustomSound({ asset, name: f.name, mime: f.type }, volume);
+  };
+  return (
+    <details className="loot-sounds">
+      <summary>Custom chest sounds <small className="muted">({Object.keys(sounds ?? {}).length} set)</small></summary>
+      <p className="hint">Upload your own sound for any box rarity. It plays instead of the built-in chest sound. Files stay in your campaign and cloud save.</p>
+      <input ref={file} type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f); }} />
+      <ul className="ls-list">
+        {rows.map(r => {
+          const s = sounds?.[r.id];
+          return (
+            <li key={r.id} className={`t-${r.id}`}>
+              <b className="ls-tier">{r.label}</b>
+              <span className="grow muted sm ls-name" title={s?.name}>{s ? s.name : 'Built-in'}</span>
+              {s && <button className="icon-btn" title="Play" onClick={() => playCustomSound(s, volume)}>▶</button>}
+              <button className="btn sm" onClick={() => { setTarget(r.id); file.current?.click(); }}>{s ? 'Change' : 'Upload'}</button>
+              {s && <button className="icon-btn" title="Use the built-in sound again" onClick={() => { st.set(d => { delete d.settings.lootSounds![r.id]; }); deleteAsset(s.asset); }}>✕</button>}
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
