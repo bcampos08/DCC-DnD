@@ -95,7 +95,7 @@ export interface Token {
   note?: string; // DM-only note for this one token
   light?: number; // bright light this token carries, in feet (torch 20)
   lightDim?: number; // dim light reaches this far, in feet (torch 40). Missing on older saves: see lightOf()
-  silhouette?: boolean; // table only: seen in dim light, drawn as a plain black shape
+  silhouette?: boolean; // table only: seen in dim light, drawn blurred with no name or details
   fxPick?: FxPick; // last effect chosen in the token card's Play an effect
 }
 

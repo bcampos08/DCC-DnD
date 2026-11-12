@@ -42,10 +42,10 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     for (const { note: _note, fxPick: _fxPick, ...t } of sc.tokens) {
       if (t.hidden) continue;
       if (t.kind === 'pc') { tokens.push(t); continue; }
-      // In dark scenes, enemies nobody can see aren't sent; ones in dim light go as a plain black shape.
+      // In dark scenes, enemies nobody can see aren't sent; ones in dim light go blurred: colour and picture only.
       const lv = vision ? seeLevel(sc, vision, t.x, t.y) : 2;
       if (lv === 0) continue;
-      if (lv === 1) { tokens.push({ id: t.id, kind: t.kind, x: t.x, y: t.y, size: t.size, name: '', color: '#000', hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: 0, conditions: [], silhouette: true }); continue; }
+      if (lv === 1) { tokens.push({ id: t.id, kind: t.kind, x: t.x, y: t.y, size: t.size, name: '', color: t.color, image: t.image, hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: 0, conditions: [], silhouette: true }); continue; }
       tokens.push({ ...t, hp: t.maxHp ? Math.ceil((t.hp / t.maxHp) * 100) : 0, maxHp: t.maxHp ? 100 : 0, tempHp: 0, ac: 0 });
     }
     scene = {

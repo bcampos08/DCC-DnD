@@ -490,14 +490,22 @@ function TokenNode(props: {
   onDragStart: () => void; onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void; onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void; onDbl: () => void;
 }) {
   const { t, g, c, dm } = props;
-  const img = useImage(t.silhouette ? undefined : t.image || c.portrait);
+  const img = useImage(t.image || c.portrait);
   if (t.silhouette) {
-    // Seen only in dim light: a dark shape, nothing more.
+    // Seen only in dim light: a blurry, shadowed shape. Colour and picture smear together, no name or details.
     const rr = (Math.max(t.size, 0.5) * g) / 2 * 0.9;
     return (
       <Group name="token" id={t.id} x={props.x} y={props.y} listening={false}>
-        <Circle radius={rr + 2} fill="rgba(0,0,0,.5)" offsetY={-3} />
-        <Circle radius={rr} fill="#050505" stroke="#2a2a2a" strokeWidth={2} />
+        <Shape sceneFunc={kctx => {
+          const cx = kctx._context as CanvasRenderingContext2D;
+          cx.save();
+          const k = Math.hypot(cx.getTransform().a, cx.getTransform().b); // blur is in screen pixels, so follow the zoom
+          cx.filter = `blur(${Math.max(2, rr * 0.22 * k)}px)`;
+          cx.beginPath(); cx.arc(0, 0, rr, 0, Math.PI * 2); cx.fillStyle = t.color; cx.fill();
+          if (img) { cx.save(); cx.beginPath(); cx.arc(0, 0, rr - 2, 0, Math.PI * 2); cx.clip(); cx.drawImage(img, -rr, -rr, rr * 2, rr * 2); cx.restore(); }
+          cx.beginPath(); cx.arc(0, 0, rr * 1.05, 0, Math.PI * 2); cx.fillStyle = 'rgba(10,10,15,.45)'; cx.fill();
+          cx.restore();
+        }} />
       </Group>
     );
   }
