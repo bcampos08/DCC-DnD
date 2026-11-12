@@ -85,6 +85,7 @@ export default function ScenesPanel() {
       <label className="check"><input type="checkbox" checked={settings.fx !== false} onChange={e => st.set(d => { d.settings.fx = e.target.checked; })} /> Attack and spell animations on the table screen</label>
       <label className="check"><input type="checkbox" checked={settings.diceFx !== false} onChange={e => st.set(d => { d.settings.diceFx = e.target.checked; })} /> Dice roll animations on the table screen</label>
       <label className="check"><input type="checkbox" checked={settings.fxSound !== false} onChange={e => st.set(d => { d.settings.fxSound = e.target.checked; })} /> Sound effects</label>
+      <label className="check"><input type="checkbox" checked={settings.lootSound !== false} disabled={settings.fxSound === false} onChange={e => st.set(d => { d.settings.lootSound = e.target.checked; })} /> Chest sounds when opening loot boxes</label>
       <label className="slider">Volume <input type="range" min={0} max={1} step={0.05} value={settings.fxVolume ?? 0.7} onChange={e => st.set(d => { d.settings.fxVolume = +e.target.value; })} /><button className="btn sm" onClick={() => testSound(settings.fxVolume ?? 0.7)}>Test</button></label>
       <p className="hint">Hidden rolls never animate. With animations on, clicking an attack asks you to click its target; Esc just rolls. Sounds play from this computer, so they come out of the TV if its audio goes there.</p>
 

@@ -175,3 +175,40 @@ export function diceSound(volume: number, count: number, landMs: number) {
     noise(land + d * 0.012, 0.05, 0.35 / Math.sqrt(n), 'bandpass', 1800, 1200, 2.5, 0.002);
   }
 }
+
+// Opening a loot chest: latch click, creaking lid, lid thump, then a reward sparkle that grows
+// with the box's rarity tier (0 bronze ... 5 celestial). Coins add a jingle.
+export function chestSound(volume: number, tier: number, coins: boolean) {
+  const c = audio(volume);
+  if (!c) return;
+  const t0 = c.currentTime + 0.03;
+  // latch
+  noise(t0, 0.03, 0.5, 'bandpass', 3200, 2000, 4, 0.002);
+  tone(t0, 'square', 1400, 900, 0.03, 0.08, 0.001);
+  // creaking hinge: a wobbling, rising-then-falling saw tone through a narrow filter
+  const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(150, t0 + 0.08); o.frequency.linearRampToValueAtTime(230, t0 + 0.45); o.frequency.linearRampToValueAtTime(170, t0 + 0.75);
+  lfo.frequency.value = 23; lg.gain.value = 18; lfo.connect(lg); lg.connect(o.frequency);
+  f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 6;
+  env(g, t0 + 0.08, 0.32, 0.06, 0.65);
+  o.connect(f); f.connect(g); g.connect(master!);
+  o.start(t0 + 0.08); lfo.start(t0 + 0.08); o.stop(t0 + 0.9); lfo.stop(t0 + 0.9);
+  // lid falls open
+  thump(t0 + 0.8, 0.55, 120);
+  noise(t0 + 0.8, 0.09, 0.25, 'lowpass', 1500, 300);
+  // reward
+  const r = t0 + 0.92;
+  if (coins) for (let i = 0; i < 9; i++) tone(r + i * 0.035 + Math.random() * 0.03, 'triangle', 2600 + Math.random() * 1800, 2400, 0.12, 0.06);
+  if (tier >= 1) chime(r + 0.05, 0.06 + tier * 0.025);
+  if (tier >= 2) shimmer(r + 0.1, 0.5 + tier * 0.15, 0.05 + tier * 0.015);
+  if (tier >= 4) [262, 330, 392, 523].forEach((fq, i) => tone(r + 0.15 + i * 0.02, 'sine', fq, fq, 1.6, 0.05 + (tier - 4) * 0.03, 0.25)); // a warm swell for legendary and celestial
+}
+
+// Searching a body: cloth rustles and a rummage, with a small chime if anything turned up.
+export function searchSound(volume: number, found: boolean) {
+  const c = audio(volume);
+  if (!c) return;
+  const t0 = c.currentTime + 0.03;
+  for (let i = 0; i < 5; i++) noise(t0 + i * 0.11 + Math.random() * 0.04, 0.1, 0.22, 'bandpass', 1200 + Math.random() * 1500, 700, 1.2, 0.02);
+  if (found) chime(t0 + 0.65, 0.07);
+}
