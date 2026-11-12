@@ -71,7 +71,10 @@ export function addCharacterToken(c: Character) {
   const existing = sc.tokens.find(t => t.charId === c.id);
   if (existing) { useUI.getState().set({ selected: [existing.id] }); return; }
   const [p] = spots(1, 1, sc.tokens);
-  const t: Token = { id: uid(), name: c.name, x: p.x, y: p.y, size: 1, color: c.color, kind: 'pc', charId: c.id, hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: c.ac, conditions: [] };
+  // Same look as this character's token on other scenes (size, colour, light, notes...).
+  const other = st.scenes.flatMap(s => s.tokens).find(x => x.charId === c.id);
+  const shared = other ? { size: other.size, color: other.color, image: other.image, light: other.light, lightDim: other.lightDim, note: other.note, fxPick: other.fxPick } : {};
+  const t: Token = { id: uid(), name: c.name, x: p.x, y: p.y, size: 1, color: c.color, kind: 'pc', charId: c.id, hidden: false, hp: 0, maxHp: 0, tempHp: 0, ac: c.ac, conditions: [], ...shared };
   st.updateScene(sc.id, s => { s.tokens.push(t); });
   exploreNow(sc.id);
   // Placed mid-fight: link the token to the character's initiative entry, or add one.

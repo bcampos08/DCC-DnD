@@ -41,6 +41,23 @@ interface Actions {
 
 type Store = Campaign & Actions;
 
+// A character's token looks the same in every scene: changes to these on one scene's token
+// copy to that character's tokens everywhere. Position and hidden stay per scene.
+const SHARED_TOKEN_KEYS = ['size', 'color', 'image', 'light', 'lightDim', 'note', 'fxPick'] as const;
+function syncCharTokens(scenes: Scene[], before: Scene, after: Scene): Scene[] {
+  if (before.tokens === after.tokens) return scenes;
+  const old = new Map(before.tokens.map(t => [t.id, t]));
+  const changes = new Map<string, Partial<Token>>(); // charId -> changed fields
+  for (const t of after.tokens) {
+    const o = old.get(t.id);
+    if (!t.charId || !o || o === t) continue;
+    for (const k of SHARED_TOKEN_KEYS) if (t[k] !== o[k]) (changes.get(t.charId) ?? changes.set(t.charId, {}).get(t.charId)!)[k] = t[k] as never;
+  }
+  if (!changes.size) return scenes;
+  return scenes.map(sc => (sc.id === after.id || !sc.tokens.some(t => t.charId && changes.has(t.charId)) ? sc
+    : produce(sc, d => { for (const t of d.tokens) { const p = t.charId && changes.get(t.charId); if (p) Object.assign(t, p); } })));
+}
+
 // Undo keeps recent scene snapshots in memory only.
 const history: { sceneId: string; scene: Scene }[] = [];
 
@@ -60,7 +77,8 @@ export const useCampaign = create<Store>()(
         const cur = s.scenes.find(x => x.id === id);
         if (!cur) return s;
         if (undoable) { history.push({ sceneId: id, scene: cur }); if (history.length > 80) history.shift(); }
-        return { scenes: s.scenes.map(x => (x.id === id ? produce(x, fn) : x)) };
+        const next = produce(cur, fn);
+        return { scenes: syncCharTokens(s.scenes.map(x => (x.id === id ? next : x)), cur, next) };
       }),
       updateToken: (sceneId, tokenId, patch) => get().updateScene(sceneId, sc => {
         const t = sc.tokens.find(t => t.id === tokenId);
