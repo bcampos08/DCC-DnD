@@ -3,6 +3,7 @@ import { useCampaign } from '../store';
 import { useUI } from '../ui';
 import { uid } from '../lib/id';
 import type { Scene, SceneFolder } from '../types';
+import { floorOf, useFloorId } from '../lib/floors';
 
 type Drag = { kind: 'scene' | 'folder'; id: string } | null;
 export const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
@@ -24,8 +25,12 @@ export const isInside = (folders: SceneFolder[], id: string | undefined, ancesto
 // Explorer-style tree of folders and scenes. Drag items onto a folder to move them,
 // or onto empty space to move them back to the top level.
 export default function SceneTree({ onNewScene }: { onNewScene: (folderId?: string) => void }) {
-  const scenes = useCampaign(s => s.scenes);
-  const folders = useCampaign(s => s.sceneFolders);
+  const allScenes = useCampaign(s => s.scenes);
+  const allFolders = useCampaign(s => s.sceneFolders);
+  const floorId = useFloorId();
+  // Only this floor's scenes and folders.
+  const scenes = allScenes.filter(s => floorOf(s) === floorId);
+  const folders = allFolders.filter(f => floorOf(f) === floorId);
   const activeId = useCampaign(s => s.activeSceneId);
   const tableId = useCampaign(s => s.tableSceneId);
   const st = useCampaign.getState();
@@ -36,7 +41,7 @@ export default function SceneTree({ onNewScene }: { onNewScene: (folderId?: stri
   const select = (id: string) => { st.set(d => { d.activeSceneId = id; }); useUI.getState().set({ selected: [] }); };
   const setFolder = (id: string, p: Partial<SceneFolder>) => st.set(d => { const f = d.sceneFolders.find(f => f.id === id); if (f) Object.assign(f, p); });
   const newFolder = (parentId?: string) => {
-    const f: SceneFolder = { id: uid(), name: 'New folder', parentId };
+    const f: SceneFolder = { id: uid(), name: 'New folder', parentId, floorId };
     st.set(d => { d.sceneFolders.push(f); const p = d.sceneFolders.find(x => x.id === parentId); if (p) p.collapsed = false; });
     setRenaming(f.id);
   };
@@ -97,8 +102,9 @@ export default function SceneTree({ onNewScene }: { onNewScene: (folderId?: stri
           if (!confirm(`Delete scene “${s.name}”?`)) return;
           st.set(d => {
             d.scenes = d.scenes.filter(x => x.id !== s.id);
-            if (d.activeSceneId === s.id) d.activeSceneId = d.scenes[0].id;
-            if (d.tableSceneId === s.id) d.tableSceneId = d.scenes[0].id;
+            const same = d.scenes.find(x => floorOf(x) === floorId) ?? d.scenes[0];
+            if (d.activeSceneId === s.id) d.activeSceneId = same.id;
+            if (d.tableSceneId === s.id) d.tableSceneId = same.id;
           });
         }}>🗑</button>
       </span>
@@ -145,8 +151,8 @@ export default function SceneTree({ onNewScene }: { onNewScene: (folderId?: stri
     <div className={'scene-tree' + (over === 'root' ? ' drop' : '')} {...dropProps(undefined)}>
       <div className="row gap tree-bar">
         <button className="btn sm" onClick={() => newFolder()}>＋ Folder</button>
-        <button className="btn sm ghost" onClick={() => st.set(d => { d.sceneFolders.forEach(f => { f.collapsed = true; }); })} disabled={!folders.length}>Collapse all</button>
-        <button className="btn sm ghost" onClick={() => st.set(d => { d.sceneFolders.forEach(f => { f.collapsed = false; }); })} disabled={!folders.length}>Expand all</button>
+        <button className="btn sm ghost" onClick={() => st.set(d => { d.sceneFolders.forEach(f => { if (floorOf(f) === floorId) f.collapsed = true; }); })} disabled={!folders.length}>Collapse all</button>
+        <button className="btn sm ghost" onClick={() => st.set(d => { d.sceneFolders.forEach(f => { if (floorOf(f) === floorId) f.collapsed = false; }); })} disabled={!folders.length}>Expand all</button>
       </div>
       <ul className="tree">
         {rootFolders.flatMap(f => folderRows(f, 0))}

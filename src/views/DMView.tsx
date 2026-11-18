@@ -1,9 +1,11 @@
+import { activeFloor, addFloor, floorOf, floorsOf, switchFloor } from '../lib/floors';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MapCanvas from '../components/MapCanvas';
 import Toolbar, { TOOL_KEYS } from '../components/Toolbar';
 import DiceTray from '../components/DiceTray';
 import TokenCard from '../components/TokenCard';
 import TemplateCard from '../components/TemplateCard';
+import RoomCard from '../components/RoomCard';
 import Toasts from '../components/Toasts';
 import CombatPanel from '../components/panels/CombatPanel';
 import MonstersPanel from '../components/panels/MonstersPanel';
@@ -160,6 +162,10 @@ export default function DMView() {
   const activeEntry = st.encounter.active ? st.encounter.entries[st.encounter.turn] : undefined;
   const activeIds = new Set(activeEntry?.tokenIds ?? []);
   const vision = tracksVision(scene) ? computeVision(scene, st.characters) : null;
+  // Keep the floor switcher on the floor of the scene you're editing.
+  useEffect(() => { if (floorOf(scene) !== activeFloor(st)) useCampaign.getState().set(d => { d.activeFloorId = floorOf(scene); }); }, [scene.id, scene.floorId, st.activeFloorId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A room card belongs to the scene it was opened on.
+  useEffect(() => { useUI.getState().set({ selectedRoom: null }); }, [scene.id]);
   const drawStyle = { color: ui.color, width: ui.strokeWidth, fill: ui.fillShapes, dmOnly: ui.dmOnlyDraw, brush: ui.brush, tplColor: ui.tplColor };
   const upd = (fn: (s: Scene) => void) => st.updateScene(scene.id, fn);
 
@@ -185,8 +191,9 @@ export default function DMView() {
       <DocViewer />
       <header className="topbar">
         <div className="brand">DCC <span>Table</span></div>
+        <FloorSwitch />
         <select className="scene-select" value={scene.id} onChange={e => st.set(d => { d.activeSceneId = e.target.value; })} aria-label="Scene you are editing">
-          {sceneGroups(st.scenes, st.sceneFolders).map(([path, list]) => {
+          {sceneGroups(st.scenes.filter(s => floorOf(s) === activeFloor(st)), st.sceneFolders.filter(f => floorOf(f) === activeFloor(st))).map(([path, list]) => {
             const opts = list.map(s => <option key={s.id} value={s.id}>{s.name}{s.id === st.tableSceneId ? ' 📺' : ''}</option>);
             return path ? <optgroup key={path} label={path}>{opts}</optgroup> : opts;
           })}
@@ -229,6 +236,7 @@ export default function DMView() {
             }}
             onFog={op => upd(s => { s.fog.ops.push(op); })}
             wallDoor={ui.wallDoor}
+            selectedRoom={ui.selectedRoom} boroughPreview={ui.boroughPreview} onSelectRoom={id => ui.set({ selectedRoom: id })}
             onWall={(pts, door) => upd(s => { (s.walls ??= []).push({ id: Math.random().toString(36).slice(2, 10), pts, ...(door ? { door: true } : {}) }); })}
             onRemoveWall={id => upd(s => { s.walls = (s.walls ?? []).filter(w => w.id !== id); })}
             onToggleDoor={id => { upd(s => { const w = s.walls?.find(w => w.id === id); if (w) w.open = !w.open; }); exploreNow(scene.id); }}
@@ -276,6 +284,7 @@ export default function DMView() {
           {scene.tokens.length === 0 && ui.tool === 'select' && <div className="canvas-hint soft">Add monsters from the 🐉 Monsters tab, or party tokens from 🛡 Party. Scroll to zoom, drag to pan.</div>}
           <DiceTray />
           <TokenCard />
+          {scene.borough && ui.selectedRoom && <RoomCard scene={scene} />}
           <TemplateCard />
           <EffectsBar />
           <Toasts />
@@ -316,4 +325,53 @@ function sceneGroups(scenes: Scene[], folders: SceneFolder[]): [string, Scene[]]
   }
   const byName = (a: Scene, b: Scene) => a.name.localeCompare(b.name, undefined, { numeric: true });
   return [...groups.entries()].map(([k, v]) => [k, v.sort(byName)] as [string, Scene[]]).sort((a, b) => (a[0] === '' ? -1 : b[0] === '' ? 1 : a[0].localeCompare(b[0])));
+}
+
+// Which dungeon floor you're working on. Each floor has its own scenes, documents and notes.
+function FloorSwitch() {
+  const floors = useCampaign(s => s.floors);
+  const cur = useCampaign(s => activeFloor(s));
+  const list = floorsOf({ floors });
+  const scenes = useCampaign(s => s.scenes);
+  return (
+    <select className="floor-select" value={cur} aria-label="Dungeon floor" title="Dungeon floor: each floor keeps its own scenes, documents and notes" onChange={e => {
+      const v = e.target.value;
+      if (v === '__new') {
+        const n = prompt('Name for the new floor', `Floor ${list.length + 1}`);
+        if (n?.trim()) addFloor(n.trim());
+        return;
+      }
+      if (v === '__rename') {
+        const f = list.find(x => x.id === cur)!;
+        const n = prompt('Rename this floor', f.name);
+        if (n?.trim()) useCampaign.getState().set(d => { const x = (d.floors ??= list.map(f => ({ ...f }))).find(x => x.id === cur); if (x) x.name = n.trim(); });
+        return;
+      }
+      if (v === '__delete') {
+        const f = list.find(x => x.id === cur)!;
+        const used = scenes.filter(s => floorOf(s) === cur);
+        if (list.length < 2) { alert('This is the only floor.'); return; }
+        if (used.some(s => s.tokens.length || s.borough || s.map?.src.startsWith('asset:'))) { alert(`${f.name} still has scenes in use. Move or delete them first (Scenes tab).`); return; }
+        if (!confirm(`Delete ${f.name}? Its empty scenes go too; its documents and notes move to ${list.find(x => x.id !== cur)!.name}.`)) return;
+        const to = list.find(x => x.id !== cur)!.id;
+        switchFloor(to);
+        useCampaign.getState().set(d => {
+          d.scenes = d.scenes.filter(s => floorOf(s) !== cur);
+          d.sceneFolders = d.sceneFolders.filter(s => floorOf(s) !== cur);
+          for (const x of [...d.docs, ...d.docFolders, ...d.notes]) if (floorOf(x) === cur) x.floorId = to;
+          d.floors = (d.floors ?? []).filter(x => x.id !== cur);
+          if (!d.scenes.some(s => s.id === d.tableSceneId)) d.tableSceneId = d.activeSceneId;
+        });
+        return;
+      }
+      switchFloor(v);
+      useUI.getState().set({ selected: [], selectedRoom: null });
+    }}>
+      {list.map(f => <option key={f.id} value={f.id}>🏢 {f.name}</option>)}
+      <option disabled>──────────</option>
+      <option value="__new">＋ New floor…</option>
+      <option value="__rename">✎ Rename this floor…</option>
+      {list.length > 1 && <option value="__delete">🗑 Delete this floor…</option>}
+    </select>
+  );
 }

@@ -10,6 +10,9 @@ import { uid } from '../../lib/id';
 import Modal from '../Modal';
 import { testSound } from '../../lib/fx/sound';
 import SceneTree, { folderPath } from '../SceneTree';
+import BoroughPanel from './BoroughPanel';
+import { activeFloor, floorOf, floorsOf, importBoroughScene, switchFloor } from '../../lib/floors';
+import { readBoroughFiles } from '../../lib/borough';
 import type { Grid } from '../../types';
 
 export default function ScenesPanel() {
@@ -32,6 +35,9 @@ export default function ScenesPanel() {
       <div className="row gap"><h3 className="h grow">Scenes</h3><button className="btn sm primary" onClick={() => { setNewIn(scene.folderId); setAdding(true); }}>+ New scene</button></div>
       <SceneTree onNewScene={f => { setNewIn(f); setAdding(true); }} />
 
+      {scene.borough && <BoroughPanel scene={scene} />}
+
+      <FloorOf sceneId={scene.id} />
       <h3 className="h">Grid — {scene.name}</h3>
       <div className="row gap wrap">
         <label className="check"><input type="checkbox" checked={scene.grid.show} onChange={e => grid({ show: e.target.checked })} /> Show grid</label>
@@ -109,14 +115,39 @@ export default function ScenesPanel() {
   );
 }
 
+// Which floor a scene belongs to; moving it takes you along to that floor.
+function FloorOf({ sceneId }: { sceneId: string }) {
+  const floors = useCampaign(s => s.floors);
+  const scene = useCampaign(s => s.scenes.find(x => x.id === sceneId));
+  if (!scene) return null;
+  const list = floorsOf({ floors });
+  return (
+    <label className="row gap sm-label floor-of">Floor
+      <select value={floorOf(scene)} onChange={e => {
+        const to = e.target.value;
+        if (!confirm(`Move “${scene.name}” to ${list.find(f => f.id === to)?.name}?`)) return;
+        useCampaign.getState().set(d => { const s = d.scenes.find(x => x.id === sceneId); if (s) { s.floorId = to; s.folderId = undefined; } });
+        switchFloor(to);
+        useCampaign.getState().set(d => { d.activeSceneId = sceneId; });
+      }}>
+        {list.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+      </select>
+    </label>
+  );
+}
+
 function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: string }) {
-  const folders = useCampaign(s => s.sceneFolders);
+  const allFolders = useCampaign(s => s.sceneFolders);
+  const floorId = useCampaign(s => activeFloor(s));
+  const folders = allFolders.filter(f => floorOf(f) === floorId);
+  const data = useRef<HTMLInputElement>(null);
   const [folder, setFolder] = useState(folderId ?? '');
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
   const add = (s: ReturnType<typeof newScene>) => {
     s.folderId = folder || undefined;
+    s.floorId = floorId;
     useCampaign.getState().set(d => { d.scenes.push(s); d.activeSceneId = s.id; });
     useUI.getState().set({ selected: [] });
     onClose();
@@ -143,6 +174,19 @@ function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: strin
       </label>
       <button className="btn primary big" disabled={busy} onClick={() => file.current?.click()}>{busy ? 'Loading…' : 'Upload a map image'}</button>
       <input ref={file} type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} />
+      <button className="btn big" disabled={busy} onClick={() => data.current?.click()}>🏙 Import a dungeon map (handoff .zip or .json)</button>
+      <input ref={data} type="file" multiple accept=".zip,.json,.svg,application/zip,application/json,image/svg+xml" hidden onChange={async e => {
+        const files = [...(e.target.files ?? [])]; e.target.value = '';
+        if (!files.length) return;
+        setBusy(true);
+        try {
+          const b = await readBoroughFiles(files);
+          const sc = importBoroughScene(b, folder || undefined);
+          useUI.getState().set({ selected: [], selectedRoom: null, boroughPreview: false });
+          useUI.getState().toast(`Imported ${sc.name}: ${b.rooms.length} rooms, ${b.corridors.length} corridors. Unlock neighborhoods in Scenes when players reach them.`);
+          onClose();
+        } catch (err) { alert((err as Error).message); } finally { setBusy(false); }
+      }} />
       <p className="hint">Or start from a built-in map:</p>
       <div className="builtin-grid">
         {BUILTIN_MAPS.map(m => (

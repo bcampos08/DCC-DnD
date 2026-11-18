@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { useCampaign } from '../../store';
 import { uid } from '../../lib/id';
 import type { Note } from '../../types';
+import { floorOf, useFloorId } from '../../lib/floors';
 
 // Encounter and session notes. A note can be tied to a scene so it's easy to find while running it.
 export default function NotesPanel() {
-  const notes = useCampaign(s => s.notes);
-  const scenes = useCampaign(s => s.scenes);
+  const allNotes = useCampaign(s => s.notes);
+  const allScenes = useCampaign(s => s.scenes);
+  const floorId = useFloorId();
+  const notes = allNotes.filter(n => floorOf(n) === floorId);
+  const scenes = allScenes.filter(s => floorOf(s) === floorId);
   const activeId = useCampaign(s => s.activeSceneId);
   const [filter, setFilter] = useState<'all' | 'scene'>('all');
   const [q, setQ] = useState('');
@@ -15,7 +19,7 @@ export default function NotesPanel() {
 
   const upd = (id: string, patch: Partial<Note>) => st.set(d => { const n = d.notes.find(n => n.id === id); if (n) Object.assign(n, patch, { updatedAt: Date.now() }); });
   const add = () => {
-    const n: Note = { id: uid(), title: '', body: '', sceneId: activeId, updatedAt: Date.now() };
+    const n: Note = { id: uid(), title: '', body: '', sceneId: activeId, updatedAt: Date.now(), floorId };
     st.set(d => { d.notes.unshift(n); });
     setOpen(o => new Set(o).add(n.id));
     setFilter('all');

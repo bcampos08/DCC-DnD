@@ -35,6 +35,8 @@ interface UI {
   targeting: Targeting | null; // waiting for the DM to click a target on the map
   fx: FxEvent[]; // animations running on the DM's own map
   selectedDrawing: string | null;
+  selectedRoom: string | null; // dungeon map room ("x,y") whose card is open
+  boroughPreview: boolean; // show the dungeon map as players see it
   // Next area template drawn becomes this spell effect instead (from the token card's Wall / Cone).
   openDoc: string | null; // document open full screen
   pendingEffect: { style: 'wall' | 'cone'; element: string; duration: string; label: string; casterEntry?: string } | null;
@@ -65,7 +67,7 @@ export const useUI = create<UI>()((set, get) => ({
   tool: 'select', selected: [], selectedTemplate: null, tab: 'combat', monsterId: null,
   rollHidden: true, adv: 'normal', camera: {}, viewport: { w: 1, h: 1 },
   color: '#e11d48', strokeWidth: 4, fillShapes: false, wallDoor: false, dmOnlyDraw: false, brush: 1.5, tplColor: '#f97316',
-  cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(), targeting: null, fx: [], selectedDrawing: null, pendingEffect: null, openDoc: null,
+  cameraNonce: 0, tableCamera: null, toasts: [], trayRolls: savedTrayRolls(), targeting: null, fx: [], selectedDrawing: null, selectedRoom: null, boroughPreview: false, pendingEffect: null, openDoc: null,
   set: p => set(typeof p === 'function' ? p : () => p),
   toast: (text, action) => {
     const id = tid++;

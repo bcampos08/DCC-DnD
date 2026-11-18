@@ -557,3 +557,30 @@ h3, h4 { margin: 0; }
 .ls-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ls-list .t-bronze { --t: var(--bronze); } .ls-list .t-silver { --t: var(--silver); } .ls-list .t-gold { --t: var(--gold); }
 .ls-list .t-platinum { --t: var(--platinum); } .ls-list .t-legendary { --t: var(--legendary); } .ls-list .t-celestial { --t: var(--celestial); }
+.room-card .rc-title { font-family: var(--display); font-size: 1.05rem; color: var(--accent); }
+.room-vis { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-size: .86rem; }
+.room-vis.on { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); }
+.room-notes { font-size: .9rem; line-height: 1.45; }
+.room-notes p { margin: 0 0 .5em; }
+
+/* floors */
+.floor-select { font-weight: 700; max-width: 170px; color: var(--accent); }
+.floor-of { margin: 10px 0 2px; }
+/* dungeon map controls */
+.borough-panel { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 10px 0; background: var(--bg); }
+.bp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.bp-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--raised); }
+.bp-list li.on { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+.bp-hood { flex-basis: 100%; font-size: .84rem; line-height: 1.4; padding: 2px 4px 4px; }
+.bp-hood p { margin: 0 0 .35em; }
+.bp-group summary { cursor: pointer; font-weight: 700; font-size: .88rem; margin: 6px 0 3px; }
+.bp-keys { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.bp-keys li { display: flex; align-items: center; gap: 4px; }
+.bp-go { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: none; border: 0; padding: 2px 4px; text-align: left; border-radius: 6px; font-size: .86rem; }
+.bp-go:hover { background: var(--raised); }
+.bp-go .grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bp-type { flex: none; min-width: 2.6em; text-align: center; font-weight: 800; font-size: .76rem; border-radius: 5px; padding: 1px 4px; border: 1.5px solid; }
+.bp-type.t-boss { background: #f4cfc8; color: #a3271c; } .bp-type.t-safe { background: #cfe8c6; color: #2f6e2b; } .bp-type.t-guild { background: #d8d3f3; color: #3f3794; }
+.bp-type.t-stairs { background: #f6de86; color: #8a6200; } .bp-type.t-lair { background: #f7d7b0; color: #a5541a; } .bp-type.t-feature { background: #f2ebbd; color: #7d6d14; } .bp-type.t-wc { background: #d2ecf1; color: #2b7586; }
+.icon-btn.on { color: var(--ok); }
+.btn.on { border-color: var(--ok); }

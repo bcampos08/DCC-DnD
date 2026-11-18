@@ -6,6 +6,7 @@ import { deleteAsset } from '../../lib/assets';
 import { uid } from '../../lib/id';
 import { byName, folderPath, isInside } from '../SceneTree';
 import type { Doc, SceneFolder } from '../../types';
+import { floorOf, useFloorId } from '../../lib/floors';
 
 export const DOC_ICON: Record<Doc['kind'], string> = { pdf: '📕', word: '📘', text: '📄', image: '🖼', other: '📦' };
 const NONE: never[] = [];
@@ -15,8 +16,11 @@ const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includ
 // Documents in Explorer-style folders. Drag documents or folders onto a folder to move them,
 // or drop files from your computer straight onto a folder.
 export default function DocsPanel() {
-  const docs = useCampaign(s => s.docs) ?? NONE;
-  const folders = useCampaign(s => s.docFolders) ?? NONE;
+  const allDocs = useCampaign(s => s.docs) ?? NONE;
+  const allFolders = useCampaign(s => s.docFolders) ?? NONE;
+  const floorId = useFloorId();
+  const docs = allDocs.filter(d => floorOf(d) === floorId);
+  const folders = allFolders.filter(f => floorOf(f) === floorId);
   const openId = useUI(s => s.openDoc);
   const [q, setQ] = useState('');
   const [drag, setDrag] = useState<Drag>(null);
@@ -29,7 +33,7 @@ export default function DocsPanel() {
   const upload = (folderId?: string) => { setUploadTo(folderId); file.current?.click(); };
   const setFolder = (id: string, p: Partial<SceneFolder>) => st.set(d => { const f = d.docFolders.find(f => f.id === id); if (f) Object.assign(f, p); });
   const newFolder = (parentId?: string) => {
-    const f: SceneFolder = { id: uid(), name: 'New folder', parentId };
+    const f: SceneFolder = { id: uid(), name: 'New folder', parentId, floorId };
     st.set(d => { d.docFolders.push(f); const p = d.docFolders.find(x => x.id === parentId); if (p) p.collapsed = false; });
     setRenaming(f.id);
   };
@@ -152,8 +156,8 @@ export default function DocsPanel() {
         <div className={'scene-tree' + (over === 'root' ? ' drop' : '')} {...dropProps(undefined)}>
           <div className="row gap tree-bar">
             <button className="btn sm" onClick={() => newFolder()}>＋ Folder</button>
-            <button className="btn sm ghost" onClick={() => st.set(d => { d.docFolders.forEach(f => { f.collapsed = true; }); })} disabled={!folders.length}>Collapse all</button>
-            <button className="btn sm ghost" onClick={() => st.set(d => { d.docFolders.forEach(f => { f.collapsed = false; }); })} disabled={!folders.length}>Expand all</button>
+            <button className="btn sm ghost" onClick={() => st.set(d => { d.docFolders.forEach(f => { if (floorOf(f) === floorId) f.collapsed = true; }); })} disabled={!folders.length}>Collapse all</button>
+            <button className="btn sm ghost" onClick={() => st.set(d => { d.docFolders.forEach(f => { if (floorOf(f) === floorId) f.collapsed = false; }); })} disabled={!folders.length}>Expand all</button>
           </div>
           <ul className="tree">
             {rootFolders.flatMap(f => folderRows(f, 0))}

@@ -146,6 +146,8 @@ export interface Camera { x: number; y: number; scale: number }
 export interface Scene {
   id: string;
   name: string;
+  floorId?: string; // dungeon floor this scene belongs to; none = Floor 1
+  borough?: Borough; // map drawn from dungeon data (rooms and corridors) instead of an image
   folderId?: string; // scene folder it lives in; none = top level
   map?: { src: string; width: number; height: number }; // src: asset id ("asset:...") or URL
   grid: Grid;
@@ -216,6 +218,8 @@ export interface Campaign {
   docs: Doc[];
   docFolders: SceneFolder[];
   notes: Note[];
+  floors?: Floor[];
+  activeFloorId?: string;
 }
 
 // A sound file the DM uploaded (stored like maps: "asset:..."), e.g. for opening a Celestial box.
@@ -253,9 +257,38 @@ export interface DdbSheet {
   bio: { label: string; value: string }[];
 }
 
-export interface Note { id: string; title: string; body: string; sceneId?: string; updatedAt: number }
+export interface Note { id: string; title: string; body: string; sceneId?: string; updatedAt: number; floorId?: string }
 
-export interface SceneFolder { id: string; name: string; parentId?: string; collapsed?: boolean }
+export interface SceneFolder { id: string; name: string; parentId?: string; collapsed?: boolean; floorId?: string }
+
+// ----- Dungeon map drawn from data (a borough: neighborhoods of rooms and corridors) -----
+// Grid squares, 0-indexed from the top-left. Rooms and corridors belong to a neighborhood ("hood").
+export type BoroughRoomType = 'boss' | 'safe' | 'guild' | 'wc' | 'stairs' | 'lair' | 'feature' | 'filler';
+export interface BoroughRoom { hood: string; key?: string; type: BoroughRoomType; x: number; y: number; w: number; h: number; door?: [number, number]; side?: 'N' | 'S' | 'E' | 'W' }
+export interface BoroughCorridor { hood: string; kind: 'hall' | 'path' | 'rail' | 'culvert' | 'bridge'; squares: [number, number][] }
+export interface BoroughHood { name: string; kind: string; origin: [number, number]; mob?: string; feel?: string; travel?: string }
+export type BoroughFeature =
+  | { t: 'water' | 'island'; x: number; y: number; rx: number; ry: number }
+  | { t: 'tree'; x: number; y: number; r: number }
+  | { t: 'start'; x: number; y: number }
+  | { t: 'label'; x: number; y: number; rot: number; text: string };
+export interface Borough {
+  title: string;
+  cols: number; rows: number; hoodSize: number; feet: number; // feet per square
+  bands: number[]; // rows/columns that are thoroughfares
+  hoods: Record<string, BoroughHood>;
+  rooms: BoroughRoom[];
+  corridors: BoroughCorridor[];
+  features: BoroughFeature[];
+  notes: Record<string, { name: string; type: string; notes: string }>; // GM notes by room key (DM only)
+  // What players can see:
+  shownHoods: string[]; // neighborhoods unlocked for players
+  revealed: string[]; // rooms you revealed ("x,y")
+  hiddenRooms: string[]; // saferooms, guilds or bathrooms you hid again
+}
+
+// Dungeon floors keep their scenes, documents and notes apart. The party, loot and monsters are shared.
+export interface Floor { id: string; name: string; lastSceneId?: string }
 
 export interface FxPick { pick: string; element: string; toHit: string; dice: string; radius?: string; dur?: string }
 
@@ -279,6 +312,7 @@ export interface LastingFx {
 export interface Doc {
   id: string;
   name: string;
+  floorId?: string;
   folderId?: string;
   kind: 'pdf' | 'word' | 'text' | 'image' | 'other';
   mime: string;

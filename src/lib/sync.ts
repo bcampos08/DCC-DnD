@@ -1,3 +1,4 @@
+import { tableBorough } from './borough';
 import { isDefeatedIn } from './defeat';
 import type { FxEvent } from './fx/core';
 import { computeVision, seeLevel, tracksVision, type Vision } from './vision';
@@ -51,6 +52,8 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     scene = {
       ...sc,
       tokens,
+      // Dungeon maps: only unlocked neighborhoods and rooms players can see, never the GM notes.
+      borough: sc.borough ? tableBorough(sc.borough) : undefined,
       walls: undefined, // the table doesn't need them; vision already stops at walls
       drawings: sc.drawings.filter(d => !d.dmOnly),
     };

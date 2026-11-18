@@ -10,6 +10,7 @@ import { cubeRect, gridFeet, snapCentre, snapCorner, templateCells, CONE_HALF } 
 import type { Measure, Ping } from '../lib/sync';
 import type { Tool } from '../ui';
 import FxLayer from './FxLayer';
+import BoroughMap from './BoroughMap';
 import type { FxEvent } from '../lib/fx/core';
 import type { Light } from '../lib/fx/draw';
 
@@ -56,6 +57,9 @@ interface Props {
   onRemoveWall?: (id: string) => void;
   onToggleDoor?: (id: string) => void;
   wallDoor?: boolean; // wall tool draws doors
+  selectedRoom?: string | null; // dungeon map room card open
+  onSelectRoom?: (id: string | null) => void;
+  boroughPreview?: boolean;
   playersCanSee?: (x: number, y: number) => boolean; // used to keep enemy move arrows off the table
   // Table: running effects. DM: waiting for a target click.
   fx?: FxEvent[];
@@ -271,7 +275,15 @@ export default function MapCanvas(p: Props) {
       return; // a click isn't a shape; drag to make one
     }
     switch (d.k) {
-      case 'pan': if (!d.moved && dm && tool === 'select') { p.onSelect?.([], false); p.onSelectTemplate?.(null); p.onSelectDrawing?.(null); } return;
+      case 'pan': if (!d.moved && dm && tool === 'select') {
+        p.onSelect?.([], false); p.onSelectTemplate?.(null); p.onSelectDrawing?.(null);
+        // Dungeon maps: clicking a room opens its card.
+        if (scene.borough) {
+          const m = toMap(), sx = Math.floor(m.x / g.size), sy = Math.floor(m.y / g.size);
+          const r = scene.borough.rooms.find(r => sx >= r.x && sx < r.x + r.w && sy >= r.y && sy < r.y + r.h);
+          p.onSelectRoom?.(r ? `${r.x},${r.y}` : null);
+        }
+      } return;
       case 'measure': p.onMeasure?.(null); return;
       case 'box': {
         const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1), w = Math.abs(d.x1 - d.x0), h = Math.abs(d.y1 - d.y0);
@@ -373,6 +385,7 @@ export default function MapCanvas(p: Props) {
       <Layer>
         <Rect name="bg" x={-20000} y={-20000} width={40000} height={40000} fill={mode === 'table' ? '#000' : '#14110f'} />
         {mapImg ? <KImage name="mapimg" image={mapImg} width={W} height={H} /> : <Rect name="mapimg" width={W} height={H} fill="#e8dcc0" />}
+        {scene.borough && <BoroughMap b={scene.borough} S={g.size} dm={dm} selected={p.selectedRoom} preview={p.boroughPreview} />}
         {g.show && (
           <Shape
             listening={false}
