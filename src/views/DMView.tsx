@@ -164,8 +164,6 @@ export default function DMView() {
   const vision = tracksVision(scene) ? computeVision(scene, st.characters) : null;
   // Keep the floor switcher on the floor of the scene you're editing.
   useEffect(() => { if (floorOf(scene) !== activeFloor(st)) useCampaign.getState().set(d => { d.activeFloorId = floorOf(scene); }); }, [scene.id, scene.floorId, st.activeFloorId]); // eslint-disable-line react-hooks/exhaustive-deps
-  // A room card belongs to the scene it was opened on.
-  useEffect(() => { useUI.getState().set({ selectedRoom: null }); }, [scene.id]);
   const drawStyle = { color: ui.color, width: ui.strokeWidth, fill: ui.fillShapes, dmOnly: ui.dmOnlyDraw, brush: ui.brush, tplColor: ui.tplColor };
   const upd = (fn: (s: Scene) => void) => st.updateScene(scene.id, fn);
 
@@ -198,6 +196,7 @@ export default function DMView() {
             return path ? <optgroup key={path} label={path}>{opts}</optgroup> : opts;
           })}
         </select>
+        <BackToMap sceneId={scene.id} />
         {scene.id !== st.tableSceneId
           ? <button className="btn sm warn" onClick={() => st.set(d => { d.tableSceneId = scene.id; })}>Players see “{st.scenes.find(s => s.id === st.tableSceneId)?.name}” — show this scene</button>
           : <span className="tag live">📺 Players see this scene</span>}
@@ -373,5 +372,18 @@ function FloorSwitch() {
       <option value="__rename">✎ Rename this floor…</option>
       {list.length > 1 && <option value="__delete">🗑 Delete this floor…</option>}
     </select>
+  );
+}
+
+// On a battle scene opened from a dungeon map: one click back to the map, with that room's card open.
+function BackToMap({ sceneId }: { sceneId: string }) {
+  const parent = useCampaign(s => s.scenes.find(x => x.borough?.links && Object.values(x.borough.links).includes(sceneId)));
+  if (!parent) return null;
+  const room = Object.entries(parent.borough!.links!).find(([, v]) => v === sceneId)?.[0] ?? null;
+  return (
+    <button className="btn sm back-map" title={`Back to ${parent.name}`} onClick={() => {
+      useCampaign.getState().set(d => { d.activeSceneId = parent.id; });
+      useUI.getState().set({ selected: [], selectedRoom: room });
+    }}>↩ {parent.name}</button>
   );
 }

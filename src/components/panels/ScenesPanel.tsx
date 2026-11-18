@@ -136,7 +136,7 @@ function FloorOf({ sceneId }: { sceneId: string }) {
   );
 }
 
-function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: string }) {
+export function NewScene({ onClose, folderId, defaultName, onCreated, title }: { onClose: () => void; folderId?: string; defaultName?: string; onCreated?: (sceneId: string) => void; title?: string }) {
   const allFolders = useCampaign(s => s.sceneFolders);
   const floorId = useCampaign(s => activeFloor(s));
   const folders = allFolders.filter(f => floorOf(f) === floorId);
@@ -144,12 +144,13 @@ function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: strin
   const [folder, setFolder] = useState(folderId ?? '');
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(defaultName ?? '');
   const add = (s: ReturnType<typeof newScene>) => {
     s.folderId = folder || undefined;
     s.floorId = floorId;
     useCampaign.getState().set(d => { d.scenes.push(s); d.activeSceneId = s.id; });
     useUI.getState().set({ selected: [] });
+    onCreated?.(s.id);
     onClose();
   };
   const upload = async (f: File) => {
@@ -164,7 +165,7 @@ function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: strin
     } catch { alert('Could not read that image.'); } finally { setBusy(false); }
   };
   return (
-    <Modal title="New scene" onClose={onClose}>
+    <Modal title={title ?? 'New scene'} onClose={onClose}>
       <label className="field">Scene name (optional)<input value={name} onChange={e => setName(e.target.value)} /></label>
       <label className="field">Folder
         <select value={folder} onChange={e => setFolder(e.target.value)}>
@@ -174,7 +175,7 @@ function NewScene({ onClose, folderId }: { onClose: () => void; folderId?: strin
       </label>
       <button className="btn primary big" disabled={busy} onClick={() => file.current?.click()}>{busy ? 'Loading…' : 'Upload a map image'}</button>
       <input ref={file} type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} />
-      <button className="btn big" disabled={busy} onClick={() => data.current?.click()}>🏙 Import a dungeon map (handoff .zip or .json)</button>
+      {!onCreated && <button className="btn big" disabled={busy} onClick={() => data.current?.click()}>🏙 Import a dungeon map (handoff .zip or .json)</button>}
       <input ref={data} type="file" multiple accept=".zip,.json,.svg,application/zip,application/json,image/svg+xml" hidden onChange={async e => {
         const files = [...(e.target.files ?? [])]; e.target.value = '';
         if (!files.length) return;

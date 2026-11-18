@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCampaign } from '../../store';
 import { useUI } from '../../ui';
-import { ROOM_LABEL, roomId, roomVisible, setRoomShown } from '../../lib/borough';
+import { ROOM_LABEL, SHOW_ICON, SHOW_TIP, nextShow, roomId, roomShow, roomVisible, setRoomShow, setRoomShown } from '../../lib/borough';
 import type { BoroughRoom, Scene } from '../../types';
 
 // Controls for a dungeon map scene: which neighborhoods players can see, stairwells,
@@ -33,7 +33,7 @@ export default function BoroughPanel({ scene }: { scene: Scene }) {
       <div className="row gap"><h3 className="h grow">Dungeon map</h3>
         <label className="check" title="See the map exactly as players see it"><input type="checkbox" checked={preview} onChange={e => useUI.getState().set({ boroughPreview: e.target.checked })} /> Player view</label>
       </div>
-      <p className="hint">Players see corridors, saferooms, tutorial guilds and bathrooms in unlocked neighborhoods. Click any room on the map to read its notes or reveal it.</p>
+      <p className="hint">Players see corridors, saferooms, tutorial guilds and bathrooms in unlocked neighborhoods. Click any room on the map to read its notes, reveal it (🏠 as an ordinary building, or 👁 for what it is), or open its battle scene.</p>
 
       <h4 className="sb-h">Neighborhoods players can see</h4>
       <ul className="bp-list">
@@ -78,14 +78,19 @@ export default function BoroughPanel({ scene }: { scene: Scene }) {
             <summary>{h.name}</summary>
             <ul className="bp-keys">
               {list.map(r => {
-                const on = roomVisible(b, r);
+                const show = roomShow(b, r);
+                const locked = r.hood in b.hoods && !b.shownHoods.includes(r.hood);
+                // Click to step through: hidden, shown as an ordinary building, fully revealed.
+                const next = r.type === 'stairs' || r.type === 'filler' ? (show === 'hidden' ? 'full' : 'hidden') : nextShow(show);
                 return (
                   <li key={roomId(r)}>
                     <button className="bp-go" onClick={() => goTo(r)} title="Show on the map and open its notes">
                       <span className={`bp-type t-${r.type}`}>{r.key}</span>
                       <span className="grow">{b.notes[r.key!]?.name ?? ROOM_LABEL[r.type]}</span>
                     </button>
-                    <button className={'icon-btn' + (on ? ' on' : '')} onClick={() => setRoom(r, !on)} title={on ? 'Players can see it. Click to hide.' : 'Hidden from players. Click to reveal.'}>{on ? '👁' : '🙈'}</button>
+                    {b.links?.[roomId(r)] && <span title="Has a battle scene">⚔</span>}
+                    <button className={'icon-btn' + (show === 'full' ? ' on' : '')} disabled={locked && show === 'hidden'} onClick={() => upd(s => { setRoomShow(s.borough!, r, next); })}
+                      title={`${SHOW_TIP[show]}.${locked ? ' (Its neighborhood is locked.)' : ` Click: ${SHOW_TIP[next].toLowerCase()}.`}`}>{SHOW_ICON[show]}</button>
                   </li>
                 );
               })}

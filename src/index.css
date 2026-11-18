@@ -584,3 +584,7 @@ h3, h4 { margin: 0; }
 .bp-type.t-stairs { background: #f6de86; color: #8a6200; } .bp-type.t-lair { background: #f7d7b0; color: #a5541a; } .bp-type.t-feature { background: #f2ebbd; color: #7d6d14; } .bp-type.t-wc { background: #d2ecf1; color: #2b7586; }
 .icon-btn.on { color: var(--ok); }
 .btn.on { border-color: var(--ok); }
+.room-vis { flex-wrap: wrap; }
+.room-vis .seg button { font-size: .78rem; padding: 4px 7px; white-space: nowrap; }
+.room-battle { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.back-map { white-space: nowrap; }

@@ -1,6 +1,6 @@
 import { Shape } from 'react-konva';
 import type { Borough, BoroughCorridor, BoroughRoom } from '../types';
-import { roomId, roomVisible } from '../lib/borough';
+import { asSeen, roomId, roomShow, roomVisible } from '../lib/borough';
 
 // Draws a borough (neighborhoods, thoroughfares, corridors, rooms) straight from its data, styled
 // after the handoff SVG. On the DM screen, things players can't see are marked; the table copy
@@ -108,8 +108,9 @@ function draw(c: CanvasRenderingContext2D, b: Borough, S: number, dm: boolean, p
   }
 
   // rooms
-  for (const r of b.rooms) {
-    if (preview && (!hoodOpen(r.hood) || !roomVisible(b, r))) continue;
+  for (const r0 of b.rooms) {
+    if (preview && (!hoodOpen(r0.hood) || !roomVisible(b, r0))) continue;
+    const r = preview ? asSeen(b, r0) : r0; // player view: shown-as-a-building rooms look ordinary
     const hidden = dm && !roomVisible(b, r);
     const [fill, stroke] = r.type === 'filler' ? [palOf(b.hoods[r.hood]?.kind ?? '').fill, '#5a4d3b'] : ROOM[r.type] ?? ROOM.feature;
     const x = r.x * S, y = r.y * S, w = r.w * S, h = r.h * S, inset = S * 0.08;
@@ -140,6 +141,16 @@ function draw(c: CanvasRenderingContext2D, b: Borough, S: number, dm: boolean, p
         const n = b.notes[r.key!]?.name;
         if (n) { c.font = `bold ${S * 0.38}px "DejaVu Sans", sans-serif`; fitText(c, n.split(' — ').slice(-1)[0], x + w / 2, y + h / 2 + S * 0.35, w - S * 0.6); }
       } else c.fillText(r.type === 'boss' ? `☠ ${label}` : label, x + w / 2, y + h / 2);
+    }
+    if (dm) {
+      // Your markers: 🏠 players see it as an ordinary building; ⚔ it has a battle scene.
+      const badge = (txt: string, bx: number, bg: string) => {
+        const bs = Math.min(S * 0.9, w * 0.45);
+        c.globalAlpha = 1; c.fillStyle = bg; c.beginPath(); c.arc(bx, y + bs * 0.55, bs * 0.5, 0, Math.PI * 2); c.fill();
+        c.font = `${bs * 0.6}px "Segoe UI Emoji", "Noto Color Emoji", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(txt, bx, y + bs * 0.58);
+      };
+      if (roomShow(b, r) === 'plain') badge('🏠', x + Math.min(S * 0.55, w * 0.3), 'rgba(122,96,56,.92)');
+      if (b.links?.[roomId(r)]) badge('⚔', x + w - Math.min(S * 0.55, w * 0.3), 'rgba(163,39,28,.92)');
     }
     if (selected === roomId(r)) { c.strokeStyle = '#3b82f6'; c.lineWidth = S * 0.18; c.strokeRect(x - S * 0.05, y - S * 0.05, w + S * 0.1, h + S * 0.1); }
     c.globalAlpha = 1;

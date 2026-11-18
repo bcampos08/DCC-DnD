@@ -285,6 +285,8 @@ export interface Borough {
   shownHoods: string[]; // neighborhoods unlocked for players
   revealed: string[]; // rooms you revealed ("x,y")
   hiddenRooms: string[]; // saferooms, guilds or bathrooms you hid again
+  plain?: string[]; // rooms players see only as an ordinary building (no colour, no label)
+  links?: Record<string, string>; // room ("x,y") -> battle scene id
 }
 
 // Dungeon floors keep their scenes, documents and notes apart. The party, loot and monsters are shared.

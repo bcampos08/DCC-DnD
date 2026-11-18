@@ -18,12 +18,18 @@ export function hoodAt(b: Pick<Borough, 'hoods' | 'hoodSize'>, x: number, y: num
   return null;
 }
 
-export function roomVisible(b: Borough, r: BoroughRoom) {
+// How players see a room: not at all, as an ordinary building, or as what it really is.
+export type RoomShow = 'hidden' | 'plain' | 'full';
+export function roomShow(b: Borough, r: BoroughRoom): RoomShow {
   const id = roomId(r);
-  if (r.hood in b.hoods && !b.shownHoods.includes(r.hood)) return false; // neighborhood still locked
-  if (b.revealed.includes(id)) return true;
-  return SHOWN_BY_DEFAULT.includes(r.type) && !b.hiddenRooms.includes(id);
+  if (r.hood in b.hoods && !b.shownHoods.includes(r.hood)) return 'hidden'; // neighborhood still locked
+  if (b.plain?.includes(id)) return 'plain';
+  if (b.revealed.includes(id)) return 'full';
+  return SHOWN_BY_DEFAULT.includes(r.type) && !b.hiddenRooms.includes(id) ? 'full' : 'hidden';
 }
+export const roomVisible = (b: Borough, r: BoroughRoom) => roomShow(b, r) !== 'hidden';
+// A room as players see it: shown-as-a-building rooms lose their type and label.
+export const asSeen = (b: Borough, r: BoroughRoom): BoroughRoom => (roomShow(b, r) === 'plain' ? { ...r, type: 'filler', key: undefined } : r);
 
 // What the table screen gets: only unlocked neighborhoods, visible rooms, and no GM notes.
 export function tableBorough(b: Borough): Borough {
@@ -32,11 +38,11 @@ export function tableBorough(b: Borough): Borough {
   return {
     ...b,
     hoods: Object.fromEntries(Object.entries(b.hoods).map(([k, h]) => [k, { name: h.name, kind: h.kind, origin: h.origin }])),
-    rooms: b.rooms.filter(r => roomVisible(b, r)).map(r => ({ ...r, key: r.type === 'filler' || r.type === 'wc' ? undefined : r.key })),
+    rooms: b.rooms.filter(r => roomVisible(b, r)).map(r => asSeen(b, r)).map(r => ({ ...r, key: r.type === 'filler' || r.type === 'wc' ? undefined : r.key })),
     corridors: b.corridors.filter(c => !(c.hood in b.hoods) || shown.has(c.hood)),
     features: b.features.filter(featureShown),
     notes: {},
-    revealed: [], hiddenRooms: [],
+    revealed: [], hiddenRooms: [], plain: [], links: {},
   };
 }
 
@@ -71,7 +77,7 @@ export function parseBorough(json: string, svg?: string): Borough {
     corridors: d.corridors.map(c => ({ hood: c.hood, kind: c.kind, squares: c.squares })),
     features: svg ? svgFeatures(svg, cols, rows) : [],
     notes: d.points_of_interest ?? {},
-    shownHoods: [], revealed: [], hiddenRooms: [],
+    shownHoods: [], revealed: [], hiddenRooms: [], plain: [], links: {},
   };
   return b;
 }
@@ -138,10 +144,18 @@ export async function readBoroughFiles(files: File[]): Promise<Borough> {
 }
 
 // Show or hide one room on the players' map.
-export function setRoomShown(b: Borough, r: BoroughRoom, show: boolean) {
+export function setRoomShow(b: Borough, r: BoroughRoom, show: RoomShow) {
   const id = roomId(r);
   b.revealed = b.revealed.filter(x => x !== id);
   b.hiddenRooms = b.hiddenRooms.filter(x => x !== id);
-  if (SHOWN_BY_DEFAULT.includes(r.type)) { if (!show) b.hiddenRooms.push(id); }
-  else if (show) b.revealed.push(id);
+  b.plain = (b.plain ?? []).filter(x => x !== id);
+  const byDefault = SHOWN_BY_DEFAULT.includes(r.type);
+  if (show === 'plain') b.plain.push(id);
+  else if (show === 'full' && !byDefault) b.revealed.push(id);
+  else if (show === 'hidden' && byDefault) b.hiddenRooms.push(id);
 }
+export const setRoomShown = (b: Borough, r: BoroughRoom, show: boolean) => setRoomShow(b, r, show ? 'full' : 'hidden');
+// Next state when clicking a room's reveal button: hidden -> as a building -> revealed -> hidden.
+export const nextShow = (s: RoomShow): RoomShow => (s === 'hidden' ? 'plain' : s === 'plain' ? 'full' : 'hidden');
+export const SHOW_ICON: Record<RoomShow, string> = { hidden: '🙈', plain: '🏠', full: '👁' };
+export const SHOW_TIP: Record<RoomShow, string> = { hidden: 'Hidden from players', plain: 'Players see an ordinary building', full: 'Players see what it really is' };
