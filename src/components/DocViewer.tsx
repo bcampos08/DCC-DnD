@@ -62,7 +62,7 @@ export default function DocViewer() {
 
       {doc.kind === 'word' && (
         <div className="dv-toolbar">
-          {([['bold', 'B', 'Bold'], ['italic', 'I', 'Italic'], ['underline', 'U', 'Underline']] as const).map(([c, l, t]) => <button key={c} className={'btn sm tb-' + c} onMouseDown={e => { e.preventDefault(); cmd(c); }} title={t}>{l}</button>)}
+          {([['bold', 'B', 'Bold'], ['italic', 'I', 'Italic'], ['underline', 'U', 'Underline'], ['strikeThrough', 'S', 'Strikethrough (Ctrl+Shift+X)']] as const).map(([c, l, t]) => <button key={c} className={'btn sm tb-' + c} onMouseDown={e => { e.preventDefault(); cmd(c); }} title={t}>{l}</button>)}
           <button className="btn sm" onMouseDown={e => { e.preventDefault(); cmd('formatBlock', 'H1'); }}>Heading</button>
           <button className="btn sm" onMouseDown={e => { e.preventDefault(); cmd('formatBlock', 'H2'); }}>Subheading</button>
           <button className="btn sm" onMouseDown={e => { e.preventDefault(); cmd('formatBlock', 'P'); }}>Text</button>
@@ -80,7 +80,9 @@ export default function DocViewer() {
         {doc.kind === 'image' && url && <div className="dv-image"><img src={url} alt={doc.name} /></div>}
         {doc.kind === 'word' && (
           <div className="dv-page" style={{ fontSize: `${zoom * 1.12}rem` }}>
-            <div ref={editor} className="dv-rich" contentEditable suppressContentEditableWarning spellCheck onInput={e => save({ html: (e.target as HTMLDivElement).innerHTML })} />
+            <div ref={editor} className="dv-rich" contentEditable suppressContentEditableWarning spellCheck
+              onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'x') { e.preventDefault(); cmd('strikeThrough'); } }}
+              onInput={e => save({ html: (e.target as HTMLDivElement).innerHTML })} />
           </div>
         )}
         {doc.kind === 'text' && (

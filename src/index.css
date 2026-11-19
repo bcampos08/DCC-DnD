@@ -451,7 +451,7 @@ h3, h4 { margin: 0; }
 .dv-head { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .dv-title { font-family: var(--display); font-size: 1.2rem; font-weight: 700; color: var(--accent); max-width: 50vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dv-toolbar { display: flex; gap: 4px; flex-wrap: wrap; padding: 6px 14px; background: var(--raised); border-bottom: 1px solid var(--line); justify-content: center; }
-.dv-toolbar .tb-bold { font-weight: 900; } .dv-toolbar .tb-italic { font-style: italic; } .dv-toolbar .tb-underline { text-decoration: underline; }
+.dv-toolbar .tb-bold { font-weight: 900; } .dv-toolbar .tb-italic { font-style: italic; } .dv-toolbar .tb-underline { text-decoration: underline; } .dv-toolbar .tb-strikeThrough { text-decoration: line-through; }
 .dv-body { flex: 1; min-height: 0; overflow: auto; display: flex; justify-content: center; align-items: flex-start; }
 .dv-frame { width: 100%; height: 100%; border: 0; background: #fff; }
 .dv-image { display: grid; place-items: center; width: 100%; min-height: 100%; padding: 16px; }
