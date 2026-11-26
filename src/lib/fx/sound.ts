@@ -212,3 +212,12 @@ export function searchSound(volume: number, found: boolean) {
   for (let i = 0; i < 5; i++) noise(t0 + i * 0.11 + Math.random() * 0.04, 0.1, 0.22, 'bandpass', 1200 + Math.random() * 1500, 700, 1.2, 0.02);
   if (found) chime(t0 + 0.65, 0.07);
 }
+
+// A phone's "new message" chime, timed to when the message appears on the table screen.
+export function textSound(volume: number, delayMs = 0) {
+  const c = audio(volume);
+  if (!c) return;
+  const t = c.currentTime + 0.03 + delayMs / 1000;
+  tone(t, 'sine', 1318, 1318, 0.16, 0.22, 0.004);
+  tone(t + 0.11, 'sine', 1760, 1760, 0.28, 0.2, 0.004);
+}

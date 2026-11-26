@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import MapCanvas from '../components/MapCanvas';
 import RollCard from '../components/RollCard';
 import DiceThrow from '../components/DiceThrow';
+import TableMessages from '../components/TableMessages';
 import { DICE_HOLD_MS, DICE_LAND_MS } from '../lib/diceAnim';
 import { channel, send, type LootReveal, type Measure, type Msg, type Ping, type Reveal, type TableState } from '../lib/sync';
 import type { Camera, Token } from '../types';
@@ -116,6 +117,7 @@ export default function TableView() {
           })}
         </div>
       )}
+      <TableMessages messages={state.messages ?? []} />
       {current && <div className="now-up">{label(current)}’s turn</div>}
       <div className="dice-layer">{throws.map((t, i) => <DiceThrow key={t.at + t.roll.id} roll={t.roll} row={throws.length - 1 - i} />)}</div>
       <div className="table-popups">

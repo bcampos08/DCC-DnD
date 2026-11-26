@@ -1,3 +1,4 @@
+import MessageComposer from '../components/MessageComposer';
 import { activeFloor, addFloor, floorOf, floorsOf, switchFloor } from '../lib/floors';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MapCanvas from '../components/MapCanvas';
@@ -201,6 +202,7 @@ export default function DMView() {
           ? <button className="btn sm warn" onClick={() => st.set(d => { d.tableSceneId = scene.id; })}>Players see “{st.scenes.find(s => s.id === st.tableSceneId)?.name}” — show this scene</button>
           : <span className="tag live">📺 Players see this scene</span>}
         <span className="grow" />
+        <MessageComposer />
         <label className="check" title="Fog of war on this scene"><input type="checkbox" checked={scene.fog.enabled} onChange={e => upd(s => { s.fog.enabled = e.target.checked; })} /> Fog</label>
         <button className="btn sm" onClick={sendView} title="Make the table screen show what you see now">Send my view to table</button>
         <button className="btn sm" onClick={fitTable} title="Fit the whole map on the table screen">Fit table</button>

@@ -220,7 +220,13 @@ export interface Campaign {
   notes: Note[];
   floors?: Floor[];
   activeFloorId?: string;
+  messages?: TableMessage[]; // text messages shown on the table screen
+  messageSenders?: string[]; // names the DM sends messages as
+  messagesHidden?: boolean; // thread hidden on the table screen
 }
+
+// A text message the DM sends to the table screen, as if from a character.
+export interface TableMessage { id: string; from: string; text: string; at: number }
 
 // A sound file the DM uploaded (stored like maps: "asset:..."), e.g. for opening a Celestial box.
 export interface CustomSound { asset: string; name: string; mime: string }

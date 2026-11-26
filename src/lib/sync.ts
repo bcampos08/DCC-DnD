@@ -2,7 +2,7 @@ import { tableBorough } from './borough';
 import { isDefeatedIn } from './defeat';
 import type { FxEvent } from './fx/core';
 import { computeVision, seeLevel, tracksVision, type Vision } from './vision';
-import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scene } from '../types';
+import type { Camera, Campaign, Character, Encounter, LootItem, RollResult, Scene, TableMessage } from '../types';
 
 // The table window runs on the same computer (dragged onto the TV), so the DM window
 // streams a players-safe copy of the state over a BroadcastChannel.
@@ -17,6 +17,7 @@ export interface TableState {
   chars: Pick<Character, 'id' | 'name' | 'portrait' | 'image' | 'color' | 'conditions' | 'concentrating' | 'hp' | 'maxHp' | 'tempHp' | 'ac' | 'deathSaves'>[];
   encounter: Encounter;
   showMonsterNames: boolean;
+  messages: TableMessage[]; // text-message thread (latest few)
   camera: { cx: number; cy: number; viewW: number } | null;
   cameraNonce: number;
   vision: Vision | null; // dark scenes: what players can see right now
@@ -67,6 +68,7 @@ export function tableState(c: Campaign, cameraNonce: number, camera: TableState[
     chars: c.characters.map(({ id, name, portrait, image, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves }) => ({ id, name, portrait, image, color, conditions, concentrating, hp, maxHp, tempHp, ac, deathSaves })),
     encounter: { ...c.encounter, entries, turn: c.encounter.entries[c.encounter.turn] ? entries.indexOf(c.encounter.entries[c.encounter.turn]) : -1 },
     showMonsterNames: c.settings.showMonsterNames,
+    messages: c.messagesHidden ? [] : (c.messages ?? []).slice(-8),
     camera, cameraNonce, vision,
   };
 }

@@ -117,7 +117,7 @@ export const campaignData = (): Campaign => {
   return {
     name: s.name, scenes: s.scenes, activeSceneId: s.activeSceneId, tableSceneId: s.tableSceneId, characters: s.characters,
     encounter: s.encounter, rolls: s.rolls, partyLoot: s.partyLoot, customMonsters: s.customMonsters, settings: s.settings,
-    monsterNotes: s.monsterNotes, notes: s.notes, sceneFolders: s.sceneFolders, docs: s.docs, docFolders: s.docFolders, floors: s.floors, activeFloorId: s.activeFloorId,
+    monsterNotes: s.monsterNotes, notes: s.notes, sceneFolders: s.sceneFolders, docs: s.docs, docFolders: s.docFolders, floors: s.floors, activeFloorId: s.activeFloorId, messages: s.messages, messageSenders: s.messageSenders, messagesHidden: s.messagesHidden,
   };
 };
 
